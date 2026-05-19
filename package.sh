@@ -62,8 +62,8 @@ echo "-----"
 mkdir -p lib
 
 # Pull down Python dependencies
-pip3 install -r requirements.txt -t lib --no-binary :all: --prefix ""
-
+#pip3 install -r requirements.txt -t lib --no-binary :all: --prefix ""
+pip3 install -r requirements.txt -t lib --no-cache-dir --prefix "" --default-timeout=180 --upgrade
 
 # Prep new package
 mkdir -p package
