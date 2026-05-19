@@ -478,11 +478,12 @@ body {
 }
 @keyframes extension-infrared-irdb-spin { to { transform: rotate(360deg); } }
 
-.extension-infrared-db-search {
+#extension-infrared-main .extension-infrared-db-search {
   width: 100%; padding: 12px 16px; background: var(--bg-input);
   border: 1px solid var(--border); border-radius: var(--radius-sm);
   color: var(--text); font-size: 14px; font-family: 'DM Sans', sans-serif;
   margin-bottom: 16px; outline: none;
+  height:auto;
 }
 .extension-infrared-db-search:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
 .extension-infrared-db-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }

@@ -157,9 +157,9 @@
           </div>
         </div>
         <div style="display:flex; align-items:center; gap:16px;">
-          <button class="extension-infrared-ir-btn" data-onclick="adjustTemp(-1)">-</button>
-          <span style="font-size:48px; font-weight:700; font-family:'JetBrains Mono',monospace; min-width:100px; text-align:center;" id="extension-infrared-acTemp">24°C</span>
-          <button class="extension-infrared-ir-btn" data-onclick="adjustTemp(1)">+</button>
+          <button id="extension-infrared-ir-ac-down-btn" class="extension-infrared-ir-btn">-</button>
+          <span style="font-size:48px; font-weight:700; font-family:monospace; min-width:100px; text-align:center;" id="extension-infrared-acTemp">24°C</span>
+          <button id="extension-infrared-ir-ac-up-btn"  class="extension-infrared-ir-btn">+</button>
         </div>
       </div>
     </div>
@@ -191,8 +191,9 @@
   </div>
 
   <div class="extension-infrared-tab-panel" id="extension-infrared-tab-hotel">
-    <!--
+    
 	<div class="extension-infrared-card">
+		<!--
       <div class="extension-infrared-card-title">🏨 Hotel / Hospitality TV Toolkit</div>
       <p style="color:var(--text-dim); font-size:13px; margin-bottom:12px;">
         Access hidden hotel menus, service modes, and installer settings on hospitality TVs.
@@ -200,7 +201,7 @@
       </p>
 
       <div id="extension-infrared-hotelBrandChips" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; overflow-x:auto; padding-bottom:4px;"></div>
-
+	  -->
       <div id="extension-infrared-macroProgress" style="display:none; margin-bottom:16px;">
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
           <div style="flex:1; height:4px; background:var(--border); border-radius:2px; overflow:hidden;">
@@ -213,14 +214,14 @@
 
       <div id="extension-infrared-hotelMacroList" style="display:flex; flex-direction:column; gap:10px;"></div>
     </div>
-	-->
+	
 
     <div class="extension-infrared-card" style="margin-top:16px;">
       <div class="extension-infrared-card-title">🎬 Custom Macro Builder</div>
       <p style="color:var(--text-dim); font-size:13px; margin-bottom:12px;">
         Create your own button sequences. Add IR commands and delays, name the macro, and save it.
       </p>
-      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
         <input class="extension-infrared-db-search" id="extension-infrared-customMacroName" placeholder="Macro name..." style="flex:1; margin-bottom:0; min-width:150px;">
         <div class="extension-infrared-select-wrap">
           <select id="extension-infrared-customMacroBrand">
@@ -316,15 +317,11 @@
   <div class="extension-infrared-tab-panel" id="extension-infrared-tab-import">
     <div class="extension-infrared-card">
       <div class="extension-infrared-card-title">📂 Import IR Files</div>
-      <div class="extension-infrared-dropzone" id="extension-infrared-dropzone"
-           ondragover="event.preventDefault(); this.classList.add('extension-infrared-dragover')"
-           ondragleave="this.classList.remove('extension-infrared-dragover')"
-           ondrop="handleDrop(event)"
-           data-onclick="document.getElementById('extension-infrared-fileInput').click()">
+      <div class="extension-infrared-dropzone" id="extension-infrared-dropzone">
         <div class="extension-infrared-dropzone-icon">📁</div>
         <div class="extension-infrared-dropzone-text">Drag & drop IR files here, or click to browse</div>
         <div class="extension-infrared-dropzone-sub">Supports: Flipper Zero .ir files, IRDB .csv, iRemote .json, Pronto hex .txt, raw pulse data</div>
-        <input type="file" id="extension-infrared-fileInput" accept=".ir,.csv,.txt,.json" multiple style="display:none" data-onchange="handleFiles(this.files)">
+        <input type="file" id="extension-infrared-fileInput" accept=".ir,.csv,.txt,.json" multiple style="display:none">
       </div>
     </div>
     <div id="extension-infrared-importedRemote" style="display:none;">
@@ -372,8 +369,7 @@
             <button class="extension-infrared-btn extension-infrared-btn-sm" data-onclick="loadBatchPreset('dvd')">💿 DVD Preset</button>
           </div>
           <div style="display:flex; gap:8px;">
-            <input class="extension-infrared-db-search" id="extension-infrared-batchAddName" placeholder="Add button name..." style="flex:1; margin-bottom:0;"
-                   onkeydown="if(event.key==='Enter'){addBatchButton();event.preventDefault();}">
+            <input class="extension-infrared-db-search" id="extension-infrared-batchAddName" placeholder="Add button name..." style="flex:1; margin-bottom:0;">
             <button class="extension-infrared-btn extension-infrared-btn-sm extension-infrared-btn-primary" data-onclick="addBatchButton()">+ Add</button>
           </div>
         </div>

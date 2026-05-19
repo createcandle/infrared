@@ -156,8 +156,8 @@ class InfraredAPIHandler(APIHandler):
                 print("could not load persistent data (if you just installed the add-on then this is normal)")
 
 
-        if 'codes' not in self.persistent_data:
-            self.persistent_data['codes'] = []
+        if 'remotes' not in self.persistent_data:
+            self.persistent_data['remotes'] = {}
 
 
         self.dongle = None
@@ -551,7 +551,7 @@ class InfraredAPIHandler(APIHandler):
                                         'action':action,
                                         'device_type':self.device_type,
                                         'device_product_name':self.device_product_name,
-                                        'codes':self.persistent_data['codes'],
+                                        'remotes':self.persistent_data['remotes'],
                                         'backend_ip':backend_ip,
                                         'debug':self.DEBUG
                                         }),
@@ -604,6 +604,27 @@ class InfraredAPIHandler(APIHandler):
                                         'state':state,
                                         'action':action,
                                         'learned_code':learned_code
+                                        }),
+                    )
+
+
+                # Save data
+                elif action == 'save':
+                    state = False
+                    try:
+                        if 'id' in request.body and 'data' in request.body and isinstance(request.body['id'],str) and request.body['id'] != '':
+                            self.persistent_data['remotes'][request.body['id']] = request.body.data;
+                            self.save_persistent_data();
+                            state = True
+                    except Exception as ex:
+                        print("caught error saving data: ", ex)
+                    
+                    return APIResponse(
+                      status=200,
+                      content_type='application/json',
+                      content=json.dumps({
+                                        'state':state,
+                                        'action':action
                                         }),
                     )
 

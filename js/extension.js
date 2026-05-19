@@ -40,11 +40,10 @@
 			this.isRecording = false;
 			this.capturedPulses = null;
 			this.acTemp = 24;
-			this.savedRemotes = JSON.parse(localStorage.getItem('iremote_saved') || '[]');
+			this.savedRemotes = []; //JSON.parse(localStorage.getItem('iremote_saved') || '[]');
 			this.importedButtons = [];
 
-			this.customMacroSteps = [];
-			this.customMacros = JSON.parse(localStorage.getItem('iremote_custom_macros') || '[]');
+
 
 			this.hotelSelectedBrand = null;
 			this.macroRunning = false;
@@ -335,7 +334,7 @@
 			// CUSTOM MACRO BUILDER
 
 			this.customMacroSteps = [];
-			this.customMacros = JSON.parse(localStorage.getItem('iremote_custom_macros') || '[]');
+			this.customMacros = []; //JSON.parse(localStorage.getItem('iremote_custom_macros') || '[]');
 
 			this.CM_COMMANDS = {
 			samsung32: { power:0x02,mute:0x0F,vol_up:0x07,vol_down:0x0B,ch_up:0x12,ch_down:0x10,source:0x01,
@@ -401,11 +400,6 @@
 				console.log("infrared debug: in parse_body.  body: ", body);
 			}
 
-			// Search URL
-			if(typeof body.search_url != 'undefined'){
-				localStorage.setItem("extension_infrared_search_url",body.search_url);
-			}
-
 			if(typeof body.backend_ip == 'string'){
 				this.backend_ip = body.backend_ip;
 			}
@@ -425,6 +419,19 @@
 				}
 			}
 		
+			if(typeof body.remotes != 'undefined'){
+				if(this.debug){
+					console.log("infrared debug: received remotes data: ", body.remotes);
+				}
+				if(typeof body.remotes.iremote_saved != 'undefined'){
+					this.savedRemotes = body.remotes.iremote_saved;
+					
+				}
+				if(typeof body.remotes.iremote_custom_macros != 'undefined'){
+					this.customMacros = body.remotes.remote_custom_macros;
+				}
+
+			}
 			
                
 		}
@@ -521,7 +528,7 @@
 			}
 
 			// ── Tabs ──
-			document.querySelectorAll('.extension-infrared-tab').forEach(tab => {
+			this.view.querySelectorAll('.extension-infrared-tab').forEach(tab => {
 				tab.addEventListener('click', () => {
 					document.querySelectorAll('.extension-infrared-tab').forEach(t => t.classList.remove('extension-infrared-active'));
 					document.querySelectorAll('.extension-infrared-tab-panel').forEach(p => p.classList.remove('extension-infrared-active'));
@@ -531,6 +538,42 @@
 				});
 			});
 
+
+
+			this.view.querySelector('#extension-infrared-batchAddName').addEventListener('onkeydown', (event) => {
+				if(event.key==='Enter'){this.addBatchButton();event.preventDefault();}
+			});
+
+			this.view.querySelector('#extension-infrared-ir-ac-down-btn').addEventListener('click', () => {
+				this.adjustTemp(-1);
+			});
+			this.view.querySelector('#extension-infrared-ir-ac-up-btn').addEventListener('click', () => {
+				this.adjustTemp(1);
+			});
+
+			const dropzone_el = this.view.querySelector('#extension-infrared-dropzone');
+			const file_input_el = this.view.querySelector('#extension-infrared-fileInput');
+			dropzone_el.addEventListener('dragover', (event) => {
+				event.preventDefault(); 
+				dropzone_el.classList.add('extension-infrared-dragover');
+			});
+			dropzone_el.addEventListener('dragleave', (event) => {
+				event.preventDefault(); 
+				dropzone_el.classList.remove('extension-infrared-dragover');
+			});
+			dropzone_el.addEventListener('drop', (event) => {
+				this.handleDrop(event);
+			});
+			dropzone_el.addEventListener('click', (event) => {
+				file_input_el.click()
+			});
+			file_input_el.addEventListener('change', (event) => {
+				this.handleFiles(file_input_el.files);
+			});
+			
+			
+
+				
 
 			window.API.postJson(
                 `/extensions/${this.id}/api/ajax`, {'action': 'init'}
@@ -546,9 +589,14 @@
 
 				// ── Init ──
 				this.rendersavedRemotes();
+				this.renderHotelMacros();
 				this.loadCustomMacrosIntoHotel();
 				this.renderMacroSteps();
 				//this.initSocket();
+
+				this.initHotelTab();
+				//this.getCatInfo(key) { return this.IRDB_CAT_INFO[key] || { label: key.replace(/_/g, ' '), emoji: '📱' }; }
+
 
 				//const mode = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'local' : 'GitHub Pages → localhost:7890';
 				this.log(`Infrared loaded... connecting...`, 'info');
@@ -962,7 +1010,7 @@ replayCaptured() {
 handleDrop(e) {
   e.preventDefault();
   e.target.classList.remove('extension-infrared-dragover');
-  handleFiles(e.dataTransfer.files);
+  this.handleFiles(e.dataTransfer.files);
 }
 
 async handleFiles(files) {
@@ -1006,7 +1054,7 @@ parseIRemoteJson(text, fileName) {
     if (allButtons.length > 0) {
       this.importedButtons = allButtons;
       const remoteName = remotes[0]?.name || fileName;
-      showImported(remoteName, allButtons);
+      this.showImported(remoteName, allButtons);
       this.toast(`Imported ${allButtons.length} buttons from ${remoteName}`, 'success');
     } else {
       this.toast('No valid buttons found in JSON', 'warning');
@@ -1044,28 +1092,37 @@ parseFlipperIR(text, fileName) {
   }
   if (buttons.length > 0) {
     this.importedButtons = buttons;
-    showImported(fileName, buttons);
+    this.showImported(fileName, buttons);
     this.toast(`Imported ${buttons.length} buttons from ${fileName}`, 'success');
   } else { this.toast('No valid buttons found', 'warning'); }
 }
 
 parseIRDBCsv(text, fileName) {
-  const buttons = [];
-  const lines = text.split('\n').slice(1).filter(l => l.trim() && l.includes(','));
-  for (const line of lines) {
-    const cols = line.split(',').map(s => s.trim());
-    if (cols.length < 5) continue;
-    const [funcName, protocol, device, subdevice, func] = cols;
-    const d = parseInt(device), s = parseInt(subdevice), f = parseInt(func);
-    if (isNaN(d) || isNaN(f)) continue;
-    const pulses = encodeProtocol(protocol.toLowerCase(), d | ((isNaN(s) ? 0 : s) << 8), f);
-    if (pulses.length > 0) buttons.push({ name: funcName.replace(/_/g, ' '), pulses, freq: 38000 });
-  }
-  if (buttons.length > 0) {
-    this.importedButtons = buttons;
-    showImported(fileName, buttons);
-    this.toast(`Imported ${buttons.length} codes from ${fileName}`, 'success');
-  } else { this.toast('No valid codes found in CSV', 'warning'); }
+	try{
+		const buttons = [];
+		const lines = text.split('\n').slice(1).filter(l => l.trim() && l.includes(','));
+		for (const line of lines) {
+			const cols = line.split(',').map(s => s.trim());
+			if (cols.length < 5) continue;
+			const [funcName, protocol, device, subdevice, func] = cols;
+			const d = parseInt(device), s = parseInt(subdevice), f = parseInt(func);
+			if (isNaN(d) || isNaN(f)) continue;
+			const pulses = encodeProtocol(protocol.toLowerCase(), d | ((isNaN(s) ? 0 : s) << 8), f);
+			if(this.debug){
+				console.log("infrared debug: parseIRDBCsv: pulses: ", pulses);
+			}
+			if (pulses.length > 0) buttons.push({ name: funcName.replace(/_/g, ' '), pulses, freq: 38000 });
+		}
+		if (buttons.length > 0) {
+			this.importedButtons = buttons;
+			this.showImported(fileName, buttons);
+			this.toast(`Imported ${buttons.length} codes from ${fileName}`, 'success');
+		} else { this.toast('No valid codes found in CSV', 'warning'); }
+	}
+	catch(err){
+		console.error("caught error in parseIRDBCsv: ", err);
+	}
+  
 }
 
 parseRawText(text, fileName) {
@@ -1078,7 +1135,7 @@ parseRawText(text, fileName) {
       return i % 2 === 0 ? Math.abs(v) : -Math.abs(v);
     });
     this.importedButtons = [{ name: fileName.replace(/\.\w+$/, ''), pulses, freq: 38000 }];
-    showImported(fileName, this.importedButtons);
+    this.showImported(fileName, this.importedButtons);
     this.toast(`Imported raw pulse data from ${fileName}`, 'success');
   } else { this.toast('Could not parse file', 'error'); }
 }
@@ -1100,7 +1157,7 @@ showImported(fileName, buttons) {
     el.className = 'extension-infrared-ir-btn';
     el.style.cssText = 'width:auto; padding:8px 16px; height:auto; font-size:11px;';
     el.textContent = btn.name;
-    el.onclick = () => sendImportedButton(i);
+    el.onclick = () => this.sendImportedButton(i);
     container.appendChild(el);
   });
 }
@@ -1122,7 +1179,8 @@ saveImportedRemote() {
   const name = prompt('Remote name:', 'My Remote');
   if (!name) return;
   this.savedRemotes.push({ name, buttons: this.importedButtons, created: Date.now() });
-  localStorage.setItem('iremote_saved', JSON.stringify(this.savedRemotes));
+  //localStorage.setItem('iremote_saved', JSON.stringify(this.savedRemotes));
+  this.save('iremote_saved',this.savedRemotes);
   this.rendersavedRemotes();
   this.toast(`Saved "${name}" with ${this.importedButtons.length} buttons`, 'success');
 }
@@ -1151,6 +1209,7 @@ renderHotelMacros() {
     ? this.HOTEL_MACROS.filter(m => m.brand === this.hotelSelectedBrand)
     : this.HOTEL_MACROS;
 
+  filtered.reverse();
   const container = this.view.querySelector('#extension-infrared-hotelMacroList');
   container.innerHTML = filtered.map(m => {
     const badgeClass = m.warningLevel === 0 ? 'safe' : m.warningLevel === 1 ? 'caution' : 'danger';
@@ -1254,9 +1313,7 @@ if (document.readyState === 'loading') {
 //  BROWSABLE IR DATABASE (Android-style, Git Trees API)
 // ═══════════════════════════════════════════════════
 
-
 getCatInfo(key) { return this.IRDB_CAT_INFO[key] || { label: key.replace(/_/g, ' '), emoji: '📱' }; }
-
 
 async fetchGitTree(url) {
   try {
@@ -1353,10 +1410,14 @@ renderIrdbError(msg) {
     </div>`;
 }
 
-renderIrdb(irdbIndex=null) {
-  if(irdbIndex){
-    this.irdbIndex = irdbIndex;
-  }
+clearrenderIrdb(){
+  this.irdbNav.query = '';
+  this.renderIrdb();
+}
+
+
+renderIrdb() { // irdbIndex=null
+  console.log("in renderIrdb");
   if (!this.irdbIndex) return;
   const { category, brand, query } = this.irdbNav;
   const container = this.view.querySelector('#extension-infrared-irdbBrowser');
@@ -1374,9 +1435,10 @@ renderIrdb(irdbIndex=null) {
     : category ? `this.irdbNav.category=null; this.irdbNav.query=''; renderIrdb()`
     : null;
 
+  
   let html = `<div class="extension-infrared-irdb-topbar">`;
   if (backAction) {
-    html += `<button class="extension-infrared-irdb-back" data-onclick="${backAction}">←</button>`;
+    html += `<button id="extension-infrared-irdb-back" class="extension-infrared-irdb-back">←</button>`;
   }
   html += `<div class="extension-infrared-irdb-title">${title}</div>`;
   html += `<span class="extension-infrared-irdb-count">${this.irdbIndex.totalFiles} codes</span>`;
@@ -1387,35 +1449,53 @@ renderIrdb(irdbIndex=null) {
     const placeholder = category ? `Search ${this.getCatInfo(category).label} brands...` : 'Search all brands...';
     html += `<div class="extension-infrared-irdb-searchbar">
       <span class="extension-infrared-search-icon">🔍</span>
-      <input id="extension-infrared-irdbSearchInput" placeholder="${placeholder}" value="${query}"
-             oninput="this.irdbNav.query=this.value; renderIrdb()">
-      ${query ? '<button class="extension-infrared-clear-btn" data-onclick="irdbNav.query=\'\'; renderIrdb()">✕</button>' : ''}
+      <input id="extension-infrared-irdbSearchInput" placeholder="${placeholder}" value="${query}">
+	  ${query ? '<button class="extension-infrared-clear-btn" data-onclick="clearrenderIrdb()">✕</button>' : ''}
     </div>`;
+	// 
   }
+  container.innerHTML = html;
 
-  html += `<div class="extension-infrared-irdb-list">`;
+  let irdb_list_el = document.createElement('div');
+  irdb_list_el.classList.add('extension-infrared-irdb-list');
+  irdb_list_el.setAttribute('id','extension-infrared-irdb-list-container');
+  container.appendChild(irdb_list_el);
 
+  //html += `<div class="extension-infrared-irdb-list">`;
+  let files_html = '';
   if (brand && category) {
     // Files view
     const files = this.irdbIndex.categories[category]?.brands[brand] || [];
-    html += `<div class="extension-infrared-irdb-hint">ℹ️ Tap to download and add as buttons you can test and save</div>`;
+	if(this.debug){
+		console.log("infrared debug: files: ", files);
+	}
+    files_html = `<div class="extension-infrared-irdb-hint">ℹ️ Tap to download and add as buttons you can test and save</div>`;
     files.forEach(f => {
       const srcBadge = f.source === 'flipper'
         ? '<span class="extension-infrared-irdb-chip" style="color:var(--orange);">🐬 Flipper</span>'
         : '<span class="extension-infrared-irdb-chip" style="color:var(--success);">📊 IRDB</span>';
-      html += `<div class="extension-infrared-irdb-file" data-onclick="loadIrdbFile('${f.source}','${encodeURIComponent(f.path)}','${encodeURIComponent(f.fileName)}')">
-        <span class="extension-infrared-irdb-file-icon">📄</span>
+	  const file_item_el = document.createElement('div');
+	  file_item_el.classList.add('extension-infrared-irdb-file');
+	  file_item_el.addEventListener('click', () => {
+		if(this.debug){
+			console.log("infrared debug: irdb: file details:  \n- f.source: ", f.source, "\n- f.path: ",f.path, "\n- f.fileName: ",f.fileName);
+		}
+		this.loadIrdbFile(f.source,encodeURIComponent(f.path),encodeURIComponent(f.fileName));
+		//this.loadIrdbFile(f.source,f.path,f.fileName);
+	  })
+	  file_item_el.innerHTML = `<span class="extension-infrared-irdb-file-icon">📄</span>
         <div class="extension-infrared-irdb-file-info">
           <div class="extension-infrared-irdb-file-name">${f.name}</div>
           <div>${srcBadge}<span class="extension-infrared-irdb-chip">${f.fileName}</span></div>
         </div>
-        <span class="extension-infrared-irdb-file-dl">⬇️</span>
-      </div>`;
+        <span class="extension-infrared-irdb-file-dl">⬇️</span>`;
+	  irdb_list_el.appendChild(file_item_el);
     });
+	
   } else if (category && !brand) {
     // Brands view (filtered)
     const data = this.irdbIndex.categories[category];
-    if (!data) { html += `<div class="extension-infrared-irdb-empty"><div class="extension-infrared-irdb-empty-icon">🔍</div><div>No data</div></div>`; }
+    if (!data) { irdb_list_el.innerHTML = `<div class="extension-infrared-irdb-empty"><div class="extension-infrared-irdb-empty-icon">🔍</div><div>No data</div></div>`; }
     else {
       let brands = Object.keys(data.brands).sort();
       if (query.length >= 1) {
@@ -1427,19 +1507,29 @@ renderIrdb(irdbIndex=null) {
         });
       }
       if (brands.length === 0) {
-        html += `<div class="extension-infrared-irdb-empty"><div class="extension-infrared-irdb-empty-icon">🔍</div><div>No brands matching "${query}"</div></div>`;
+        irdb_list_el.innerHTML = `<div class="extension-infrared-irdb-empty"><div class="extension-infrared-irdb-empty-icon">🔍</div><div>No brands matching "${query}"</div></div>`;
       } else {
+		
         const grouped = {};
         brands.forEach(b => { const l = b[0].toUpperCase(); (grouped[l] = grouped[l] || []).push(b); });
         Object.keys(grouped).sort().forEach(letter => {
-          html += `<div class="extension-infrared-irdb-letter">${letter}</div>`;
+			const letter_el = document.createElement('div');
+			letter_el.classList.add('extension-infrared-irdb-letter');
+			letter_el.textContent = letter;
+			irdb_list_el.appendChild(letter_el);
+          //brand_item_el.innerHTML = `<div class="extension-infrared-irdb-letter">${letter}</div>`;
           grouped[letter].forEach(b => {
             const count = data.brands[b].length;
-            html += `<div class="extension-infrared-irdb-brand" data-onclick="irdbNav.brand='${b.replace(/'/g,"\\'")}'; renderIrdb()">
-              <span class="extension-infrared-irdb-brand-name">${b}</span>
+			const brand_item_el = document.createElement('div');
+			brand_item_el.classList.add('extension-infrared-irdb-brand');
+			brand_item_el.addEventListener('click', () => {
+				this.irdbNav.brand = b.replace(/'/g,"\\'")
+				this.renderIrdb();
+			})
+			brand_item_el.innerHTML = `<span class="extension-infrared-irdb-brand-name">${b}</span>
               <span class="extension-infrared-irdb-brand-count">${count}</span>
-              <span class="extension-infrared-irdb-brand-arrow">›</span>
-            </div>`;
+              <span class="extension-infrared-irdb-brand-arrow">›</span>`;
+			irdb_list_el.appendChild(brand_item_el);
           });
         });
       }
@@ -1470,58 +1560,95 @@ renderIrdb(irdbIndex=null) {
       }
     }
     if (results.length === 0) {
-      html += `<div class="extension-infrared-irdb-empty"><div class="extension-infrared-irdb-empty-icon">🔍</div><div>No results for "${query}"</div><div style="font-size:12px; opacity:0.5; margin-top:6px;">Try: brand name, category, or both (e.g. "samsung TV")</div></div>`;
+      irdb_list_el.innerHTML = `<div class="extension-infrared-irdb-empty"><div class="extension-infrared-irdb-empty-icon">🔍</div><div>No results for "${query}"</div><div style="font-size:12px; opacity:0.5; margin-top:6px;">Try: brand name, category, or both (e.g. "samsung TV")</div></div>`;
     } else {
       results.sort((a, b) => b.score - a.score || a.brand.localeCompare(b.brand));
-      html += `<div style="font-size:12px; color:var(--text-dim); padding:4px; margin-bottom:8px;">${results.length} results</div>`;
+      irdb_list_el.innerHTML = `<div style="font-size:12px; color:var(--text-dim); padding:4px; margin-bottom:8px;">${results.length} results</div>`;
       results.forEach(r => {
         const info = this.getCatInfo(r.category);
         const srcChips = r.sources.map(s => s === 'flipper' ? '<span class="extension-infrared-irdb-chip" style="color:var(--orange);">Flipper</span>' : '<span class="extension-infrared-irdb-chip" style="color:var(--success);">irdb</span>').join('');
-        html += `<div class="extension-infrared-irdb-search-result" data-onclick="irdbNav.category='${r.category}'; this.irdbNav.brand='${r.brand.replace(/'/g,"\\'")}'; this.irdbNav.query=''; renderIrdb()">
-          <span class="extension-infrared-irdb-search-emoji">${info.emoji}</span>
+        const search_result_item_el = document.createElement('div');
+		search_result_item_el.classList.add('extension-infrared-irdb-search-result');
+		search_result_item_el.addEventListener('click', () => {
+			this.irdbNav.category=r.category; 
+			this.irdbNav.brand=r.brand.replace(/'/g,"\\'"); 
+			this.irdbNav.query=''; 
+			this.renderIrdb();
+		});
+		search_result_item_el.innerHTML = `<span class="extension-infrared-irdb-search-emoji">${info.emoji}</span>
           <div class="extension-infrared-irdb-search-info">
             <div class="extension-infrared-irdb-search-brand">${r.brand}</div>
             <div><span class="extension-infrared-irdb-chip">${info.label}</span><span class="extension-infrared-irdb-chip">${r.fileCount} files</span>${srcChips}</div>
           </div>
-          <span class="extension-infrared-irdb-brand-arrow">›</span>
-        </div>`;
+          <span class="extension-infrared-irdb-brand-arrow">›</span>`;
+		irdb_list_el.appendChild(search_result_item_el);
       });
     }
   } else {
     // Categories view
     Object.entries(this.irdbIndex.categories).forEach(([key, data]) => {
       const info = this.getCatInfo(key);
-	  // html += `<div class="extension-infrared-irdb-cat" data-irdbNav-category="${key}" data-onclick="irdbNav.category='${key}'; renderIrdb()">
-      html += `<div class="extension-infrared-irdb-cat" data-irdbNav-category="${key}" data-onclick="renderIrdb('${key}')">
-        <span class="extension-infrared-irdb-cat-emoji">${info.emoji}</span>
+	  const category_item_el = document.createElement('div');
+	  category_item_el.classList.add('extension-infrared-irdb-cat');
+	  category_item_el.addEventListener('click', () => {
+			this.irdbNav.category=key; 
+			this.renderIrdb();
+		});
+	  category_item_el.innerHTML = `<span class="extension-infrared-irdb-cat-emoji">${info.emoji}</span>
         <div class="extension-infrared-irdb-cat-info">
           <div class="extension-infrared-irdb-cat-label">${info.label}</div>
           <div class="extension-infrared-irdb-cat-meta">${data.brandCount} brands · ${data.fileCount} files</div>
         </div>
-        <span class="extension-infrared-irdb-cat-arrow">›</span>
-      </div>`;
+        <span class="extension-infrared-irdb-cat-arrow">›</span>`;
+	  irdb_list_el.appendChild(category_item_el);
     });
   }
 
-  html += `</div>`;
-  container.innerHTML = html;
+  
 
-  // Re-focus search input if it exists
-  if (!brand) {
-    const inp = this.view.querySelector('#extension-infrared-irdbSearchInput');
-    if (inp) { inp.focus(); inp.selectionStart = inp.selectionEnd = inp.value.length; }
-  }
+  	const irdb_search_input_el = this.view.querySelector('#extension-infrared-irdbSearchInput');
+	if(irdb_search_input_el){
+		irdb_search_input_el.addEventListener('input', () => {
+			this.irdbNav.query = irdb_search_input_el.value;
+			this.renderIrdb();
+		})
+		const irdb_back_button_el = this.view.querySelector('#extension-infrared-irdb-back');
+		if(irdb_back_button_el){
+			irdb_back_button_el.addEventListener('click', () => {
+				if(brand){
+					this.irdbNav.brand=null; 
+					this.renderIrdb();
+				}
+				else{
+					this.irdbNav.category=null; 
+					this.irdbNav.query=''; 
+					this.renderIrdb();
+				}
+			})
+		}
+		
+
+		// Re-focus search input if it exists
+		if (!brand) {
+			irdb_search_input_el.focus(); irdb_search_input_el.selectionStart = irdb_search_input_el.selectionEnd = irdb_search_input_el.value.length;
+		}
+	}
+	
 }
 
 async loadIrdbFile(source, encodedPath, encodedFileName) {
-  const path = decodeURIComponent(encodedPath);
+  //const path = decodeURIComponent(encodedPath);
+  const path = encodedPath;
   const fileName = decodeURIComponent(encodedFileName);
   const url = source === 'irdb'
     ? 'https://cdn.jsdelivr.net/gh/probonopd/irdb@master/' + path
     : 'https://raw.githubusercontent.com/Lucaslhm/Flipper-IRDB/main/' + path;
   try {
+	console.log("loadIrdbFile: fetching url: ", url);
+	console.log("fileName: ", fileName);
     const resp = await fetch(url);
     const text = await resp.text();
+	console.log("loadIrdbFile: response text: ", text);
     if (source === 'flipper' || fileName.endsWith('.ir')) {
       this.parseFlipperIR(text, fileName);
     } else {
@@ -1590,7 +1717,8 @@ closeModal() { this.view.querySelector('#extension-infrared-remoteModal').classL
 deleteRemote(idx) {
   if (!confirm(`Delete "${this.savedRemotes[idx].name}"?`)) return;
   this.savedRemotes.splice(idx, 1);
-  localStorage.setItem('iremote_saved', JSON.stringify(this.savedRemotes));
+  //localStorage.setItem('iremote_saved', JSON.stringify(this.savedRemotes));
+  this.save('iremote_saved',this.savedRemotes);
   this.rendersavedRemotes();
   this.toast('Remote deleted', 'warning');
 }
@@ -1636,7 +1764,8 @@ importRemoteFile(event) {
         }
       }
       if (imported > 0) {
-        localStorage.setItem('iremote_saved', JSON.stringify(this.savedRemotes));
+        //localStorage.setItem('iremote_saved', JSON.stringify(this.savedRemotes));
+		this.save('iremote_saved',this.savedRemotes);
         this.rendersavedRemotes();
         this.toast(`Imported ${imported} remote(s)`, 'success');
       } else { this.toast('No valid remotes in file', 'warning'); }
@@ -1730,8 +1859,8 @@ async startBatchLearn() {
       this.batchResults.push(null);
     } else {
       this.batchResults.push({ name, pulses, freq: 38000 });
-      feedbackVibrate(50);
-      feedbackClick();
+      //feedbackVibrate(50);
+      //feedbackClick();
       this.toast(`✓ Captured "${name}"`, 'success');
     }
     this.renderBatchList();
@@ -1748,7 +1877,8 @@ async startBatchLearn() {
   if (validButtons.length > 0) {
     const remoteName = this.view.querySelector('#extension-infrared-batchRemoteName').value.trim() || 'Batch Remote';
     this.savedRemotes.push({ name: remoteName, buttons: validButtons, created: Date.now() });
-    localStorage.setItem('iremote_saved', JSON.stringify(this.savedRemotes));
+    //localStorage.setItem('iremote_saved', JSON.stringify(this.savedRemotes));
+	this.save('iremote_saved',this.savedRemotes);
     this.rendersavedRemotes();
     this.toast(`Saved "${remoteName}" with ${validButtons.length} buttons`, 'success');
   }
@@ -1838,6 +1968,30 @@ encodeStep(s) {
   }
 }
 
+
+save(id,data,local_only=false){
+	console.log("infrared debud: in save.  id, data: ", id, data);
+	localStorage.setItem(id, JSON.stringify(data));
+	if(local_only == false){
+		window.API.postJson(
+			`/extensions/${this.id}/api/ajax`, {
+				'action': 'save',
+				'id':id, 
+				'data':data
+			}
+
+		).then((body) => {
+			if(this.debug){
+				console.log("infrared debug: save response: ", body);
+			}
+			this.parse_body(body);
+
+		}).catch((err) => {
+			console.error("Infrared: caught error in save function: ", err);
+		});
+	}
+}
+
 saveCustomMacro() {
   const name = this.view.querySelector('#extension-infrared-customMacroName').value.trim();
   if (!name) { this.toast('Enter a macro name', 'warning'); return; }
@@ -1855,7 +2009,8 @@ saveCustomMacro() {
     custom: true
   };
   this.customMacros.push(macro);
-  localStorage.setItem('iremote_custom_macros', JSON.stringify(this.customMacros));
+  //localStorage.setItem('iremote_custom_macros', JSON.stringify(this.customMacros));
+  this.save('iremote_custom_macros', this.customMacros);
   // Also add to this.HOTEL_MACROS for immediate use
   this.HOTEL_MACROS.push({
     ...macro,
@@ -1875,7 +2030,8 @@ saveCustomMacro() {
 deleteCustomMacro(id) {
   if (!confirm('Delete this custom macro?')) return;
   this.customMacros = this.customMacros.filter(m => m.id !== id);
-  localStorage.setItem('iremote_custom_macros', JSON.stringify(this.customMacros));
+  //localStorage.setItem('iremote_custom_macros', JSON.stringify(this.customMacros));
+  this.save('iremote_custom_macros',this.customMacros);
   // Remove from this.HOTEL_MACROS
   const idx = this.HOTEL_MACROS.findIndex(m => m.id === id);
   if (idx >= 0) this.HOTEL_MACROS.splice(idx, 1);
