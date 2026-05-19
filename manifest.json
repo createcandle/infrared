@@ -6,12 +6,11 @@
         "css/extension.css"
       ],
       "js": [
-		"js/socket.io.min.js",
         "js/extension.js"
       ]
     }
   ],
-  "description": "Copy and send infrared remote control signals",
+  "description": "A universal emote control that can copy and send infrared signals",
   "gateway_specific_settings": {
     "webthings": {
       "exec": "python3 {path}/main.py",
@@ -27,38 +26,14 @@
   "name": "Infrared",
   "options": {
     "default": {
-      "Restore tabs": true,
-      "Browsing history length": 5,
-      "Fullscreen delay": 60,
-      "Slideshow": true,
-      "Search URL":"https://swisscows.com/en/web?query=",
+      "Show extra macros": false,
       "Debugging": false
     },
     "schema": {
       "properties": {
-        "Restore tabs": {
-          "description": "When re-opening the infrared addon, this will restore any tabs that were open last time. This information is stored in a cooking in your actual infrared, so will be different per device",
+        "Show extra macros": {
+          "description": "Show extra macros that allow you to access hidden menus on televisions",
           "type": "boolean"
-        },
-        "Browsing history length": {
-          "description": "How long should the list of recently visited web pages be? Set to zero to disable this feature. The default is 5.",
-          "type": "integer",
-            "minimum": 0,
-            "maximum": 30
-        },
-        "Fullscreen delay": {
-          "description": "If the infrared is not actively being used, the currently open tab can, after a while, be shown fullscreen. The buttons and URL bar can be automatically hidden after a while, so that the webpage is shown full screen. You can set the delay in seconds. Set to zero to disable this feature. The default is 60 seconds.",
-          "type": "integer",
-            "minimum": 0,
-            "maximum": 180
-        },
-        "Slideshow": {
-          "description": "The infrared can switch between all open tabs to create a slideshow. This requires multiple infrared tabs to be open, and the fullscreen mode must be active. The fullscreen delay also becomes the time between switching tabs.",
-          "type": "boolean"
-        },
-        "Search URL": {
-          "description": "Advanced. You can change to a custom default search engine. However, very few search engines will run inside an iframe AND not attempt to open new links in a new window by default (opening links in new windows is blocked for security reasons). The default is https://swisscows.com/en/web?query=",
-          "type": "string"
         },
         "Debugging": {
           "description": "Advanced. Enable this to see much more detail in the internal log about what this add-on is doing.",
@@ -70,7 +45,7 @@
     }
   },
   "short_name": "Infrared",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "web_accessible_resources": [
     "css/*.css",
     "images/*.svg",

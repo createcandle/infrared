@@ -7,16 +7,6 @@
 }
 
 
-#extension-infrared-border-tab-menu{
-	background:black;
-}
-
-#extension-infrared-border-tab-menu,
-#extension-infrared-border-root #extension-infrared-border-menu{
-	padding-left:8.6rem;
-}
-
-
 #extension-infrared-title{
 	text-align: center;
     font-family: 'Open Sans', sans-serif;
@@ -36,7 +26,40 @@
 }
 
 .extension-infrared-header{
-	display:none
+	display:none;
+}
+
+.extension-infrared-hidden{
+	display:none!important;
+}
+
+.extension-infrared-flex-column-if-narrow{display:flex;}
+@media (max-width: 640px) { .extension-infrared-flex-column-if-narrow { flex-direction: column; } }
+
+
+.extension-infrared-area{
+	margin:2rem 0;
+	background-color:rgba(0,0,0,.15);
+	padding:2rem;
+	border-radius:.7rem;
+}
+
+#extension-infrared-dongle-container:empty,
+#extension-infrared-dongle-container:not(:empty) + div{
+	display:none;
+}
+
+#extension-infrared-dongle-container img{
+	float:left;
+	width:32px;
+	height:32px;
+	margin: 0 1rem 1rem 0;
+}
+
+#extension-infrared-try-detect-dongle-again-button{
+	display:block;
+	margin: 2rem 0 1rem auto;
+	padding:1rem 2rem;
 }
 
 #extension-infrared-main{
@@ -48,101 +71,9 @@
 	box-sizing: border-box;
 }
 
-.extension-infrared-border-tab{
-	opacity:.9;
-}
-.extension-infrared-border-current{
-	opacity:1;
-}
-
-#extension-infrared-border-root #extension-infrared-border-add-button{
-	margin-top:15px;
-	margin-left:0px;
-	opacity:.8;
-	border-radius:0;
-	border-top-right-radius: 20px;
-	background:none;
-}
-
-#extension-infrared-border-add-button:hover{
-	opacity:1;	
-}
-
-#extension-infrared-border-add-button svg{
-	width:30%;
-	height:30%;
-	padding: 0.7rem;
-	border-radius: 0.5rem;
-}
-
-#extension-infrared-border-add-button:hover svg{
-	background: var(--extension-infrared-border-primary);
-}
-iframe#extension-infrared-border-view{
-	background-color:white;
-}
-
-/*
-#extension-infrared-picture-holder{
-	background-color:black;
-	width:100vw;
-    max-width:100%;
-	height:100vh;
-	position:fixed;
-	top:0;
-	left:0;
-	display:flex;
-	flex-wrap:wrap;
-	align-content: space-between;
-	justify-content: center;
-	align-items: flex-end;
-    z-index:3;
-}
-*/
-
-
-
-
-
-/* limitations hint  */
-
-
-#extension-infrared-limitations-hint{
-	position:fixed;
-	display:none;
-	align-items:center;
-	justify-content:center;
-	top:0;
-	left:0;
-	right:0;
-	bottom:0;
-	height:100vh;
-	width:100vw;
-	background-color:rgba(0,0,0,.8);
-	z-index:1000;
-}
-
-
-#extension-infrared-limitations-hint > div{
-	background-color:#5d9bc7;
-	color:white;
-	font-size:1.6rem;
-	border-radius:1rem;
-	padding:2rem 4rem;
-	margin:2rem;
-	max-width:40rem;
-}
-
-
-
 
 @media screen and (max-width: 640px) {
 
-	#extension-infrared-border-root .extension-infrared-border-tab{
-		min-width: 8rem;
-		margin: 15px 1px;
-		padding: 0 0.3rem;
-	}
 
 }
 
@@ -337,7 +268,7 @@ body {
 
 
 .extension-infrared-remote-container { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-@media (max-width: 768px) { .remote-container { grid-template-columns: 1fr; } }
+@media (max-width: 768px) { .extension-infrared-remote-container { grid-template-columns: 1fr; } }
 
 .extension-infrared-remote-pad {
   background: var(--bg-card); border: 1px solid var(--border);
@@ -529,7 +460,7 @@ body {
   cursor: pointer; transition: all 0.2s; white-space: nowrap;
 }
 .extension-infrared-hotel-chip:hover { border-color: var(--accent); }
-.extension-infrared-hotel-chip.active { background: var(--accent); color: white; border-color: var(--accent); }
+.extension-infrared-hotel-chip.extension-infrared-active { background: var(--accent); color: white; border-color: var(--accent); }
 
 .extension-infrared-remote-list { display: flex; flex-direction: column; gap: 10px; }
 .extension-infrared-remote-item {
@@ -600,7 +531,7 @@ body {
 }
 
 .extension-infrared-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-@media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+@media (max-width: 768px) { .extension-infrared-grid-2 { grid-template-columns: 1fr; } }
 
 .extension-infrared-footer {
   text-align: center; padding: 32px 24px;
@@ -616,7 +547,7 @@ body {
   background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
   align-items: center; justify-content: center; padding: 20px;
 }
-.extension-infrared-modal-overlay.active { display: flex; }
+.extension-infrared-modal-overlay.extension-infrared-active { display: flex; }
 .extension-infrared-modal {
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: var(--radius); max-width: 600px; width: 100%;

@@ -64,23 +64,24 @@
 			// ═══════════════════════════════════════════════════
 			//  HOTEL / HOSPITALITY TV MACROS
 			// ═══════════════════════════════════════════════════
+			this.HOTEL_MACROS = [];
 
-			this.HOTEL_MACROS = [
+			this.HOTEL_MACROS_DEV = [
 				// ===== SAMSUNG =====
 				{
 					id: 'samsung_hotel_primary', name: 'Hotel Menu', brand: 'Samsung',
 					description: 'Mute → 1 → 1 → 9 → Enter\nOpens Hotel Option menu. ~85% success rate.',
 					tvState: 'ON', warningLevel: 0,
 					steps: [
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x0F), label: 'Mute' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x0F), label: 'Mute' },
 					{ type: 'delay', ms: 250 },
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x04), label: '1' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x04), label: '1' },
 					{ type: 'delay', ms: 250 },
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x04), label: '1' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x04), label: '1' },
 					{ type: 'delay', ms: 250 },
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x0E), label: '9' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x0E), label: '9' },
 					{ type: 'delay', ms: 250 },
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x68), label: 'Enter' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x68), label: 'Enter' },
 					]
 				},
 				{
@@ -88,15 +89,15 @@
 					description: 'Mute → 1 → 1 → 9 → Power\nAlternative ending key. ~75% success rate.',
 					tvState: 'ON', warningLevel: 0,
 					steps: [
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x0F), label: 'Mute' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x0F), label: 'Mute' },
 					{ type: 'delay', ms: 250 },
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x04), label: '1' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x04), label: '1' },
 					{ type: 'delay', ms: 250 },
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x04), label: '1' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x04), label: '1' },
 					{ type: 'delay', ms: 250 },
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x0E), label: '9' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x0E), label: '9' },
 					{ type: 'delay', ms: 250 },
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x02), label: 'Power' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x02), label: 'Power' },
 					]
 				},
 				{
@@ -104,15 +105,15 @@
 					description: 'Mute → Up → Down → OK → Mute\nFor Tizen TVs without number pads. Navigate to Settings → Sound Output first. ~60%.',
 					tvState: 'ON', warningLevel: 0,
 					steps: [
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x0F), label: 'Mute' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x0F), label: 'Mute' },
 					{ type: 'delay', ms: 300 },
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x60), label: 'Up' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x60), label: 'Up' },
 					{ type: 'delay', ms: 300 },
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x61), label: 'Down' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x61), label: 'Down' },
 					{ type: 'delay', ms: 300 },
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x68), label: 'OK' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x68), label: 'OK' },
 					{ type: 'delay', ms: 300 },
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x0F), label: 'Mute' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x0F), label: 'Mute' },
 					]
 				},
 				{
@@ -120,15 +121,15 @@
 					description: 'Mute → 1 → 8 → 2 → Power\nTV must be OFF (standby). Powers on into service mode.',
 					tvState: 'OFF', warningLevel: 1,
 					steps: [
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x0F), label: 'Mute' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x0F), label: 'Mute' },
 					{ type: 'delay', ms: 250 },
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x04), label: '1' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x04), label: '1' },
 					{ type: 'delay', ms: 250 },
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x0D), label: '8' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x0D), label: '8' },
 					{ type: 'delay', ms: 250 },
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x05), label: '2' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x05), label: '2' },
 					{ type: 'delay', ms: 250 },
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x02), label: 'Power' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x02), label: 'Power' },
 					]
 				},
 				{
@@ -136,13 +137,13 @@
 					description: 'Info → Menu → Mute → Power\nTV must be OFF (standby). Full factory access.',
 					tvState: 'OFF', warningLevel: 2,
 					steps: [
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x1F), label: 'Info' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x1F), label: 'Info' },
 					{ type: 'delay', ms: 250 },
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x1A), label: 'Menu' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x1A), label: 'Menu' },
 					{ type: 'delay', ms: 250 },
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x0F), label: 'Mute' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x0F), label: 'Mute' },
 					{ type: 'delay', ms: 250 },
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x02), label: 'Power' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x02), label: 'Power' },
 					]
 				},
 				{
@@ -150,15 +151,15 @@
 					description: 'Mute → 8 → 2 → 4 → Power\nResets PIN to 0000 on some models. Use when password prompt appears.',
 					tvState: 'ON', warningLevel: 1,
 					steps: [
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x0F), label: 'Mute' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x0F), label: 'Mute' },
 					{ type: 'delay', ms: 250 },
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x0D), label: '8' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x0D), label: '8' },
 					{ type: 'delay', ms: 250 },
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x05), label: '2' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x05), label: '2' },
 					{ type: 'delay', ms: 250 },
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x08), label: '4' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x08), label: '4' },
 					{ type: 'delay', ms: 250 },
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x02), label: 'Power' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x02), label: 'Power' },
 					]
 				},
 
@@ -168,17 +169,17 @@
 					description: 'Hold Menu 5s → 9-8-7-6 → OK\nDefault installer sequence for LG hospitality TVs.',
 					tvState: 'ON', warningLevel: 0,
 					steps: [
-					{ type: 'hold', encode: () => necEncode(0x04, 0x43), label: 'Menu (hold)', durationMs: 5000 },
+					{ type: 'hold', encode: () => this.necEncode(0x04, 0x43), label: 'Menu (hold)', durationMs: 5000 },
 					{ type: 'delay', ms: 500 },
-					{ type: 'ir', encode: () => necEncode(0x04, 0x19), label: '9' },
+					{ type: 'ir', encode: () => this.necEncode(0x04, 0x19), label: '9' },
 					{ type: 'delay', ms: 200 },
-					{ type: 'ir', encode: () => necEncode(0x04, 0x18), label: '8' },
+					{ type: 'ir', encode: () => this.necEncode(0x04, 0x18), label: '8' },
 					{ type: 'delay', ms: 200 },
-					{ type: 'ir', encode: () => necEncode(0x04, 0x17), label: '7' },
+					{ type: 'ir', encode: () => this.necEncode(0x04, 0x17), label: '7' },
 					{ type: 'delay', ms: 200 },
-					{ type: 'ir', encode: () => necEncode(0x04, 0x16), label: '6' },
+					{ type: 'ir', encode: () => this.necEncode(0x04, 0x16), label: '6' },
 					{ type: 'delay', ms: 200 },
-					{ type: 'ir', encode: () => necEncode(0x04, 0x44), label: 'OK' },
+					{ type: 'ir', encode: () => this.necEncode(0x04, 0x44), label: 'OK' },
 					]
 				},
 				{
@@ -186,17 +187,17 @@
 					description: 'Hold Home 5s → 1-1-0-5 → OK\nFor newer webOS hospitality models.',
 					tvState: 'ON', warningLevel: 0,
 					steps: [
-					{ type: 'hold', encode: () => necEncode(0x04, 0x7C), label: 'Home (hold)', durationMs: 5000 },
+					{ type: 'hold', encode: () => this.necEncode(0x04, 0x7C), label: 'Home (hold)', durationMs: 5000 },
 					{ type: 'delay', ms: 500 },
-					{ type: 'ir', encode: () => necEncode(0x04, 0x11), label: '1' },
+					{ type: 'ir', encode: () => this.necEncode(0x04, 0x11), label: '1' },
 					{ type: 'delay', ms: 200 },
-					{ type: 'ir', encode: () => necEncode(0x04, 0x11), label: '1' },
+					{ type: 'ir', encode: () => this.necEncode(0x04, 0x11), label: '1' },
 					{ type: 'delay', ms: 200 },
-					{ type: 'ir', encode: () => necEncode(0x04, 0x10), label: '0' },
+					{ type: 'ir', encode: () => this.necEncode(0x04, 0x10), label: '0' },
 					{ type: 'delay', ms: 200 },
-					{ type: 'ir', encode: () => necEncode(0x04, 0x15), label: '5' },
+					{ type: 'ir', encode: () => this.necEncode(0x04, 0x15), label: '5' },
 					{ type: 'delay', ms: 200 },
-					{ type: 'ir', encode: () => necEncode(0x04, 0x44), label: 'OK' },
+					{ type: 'ir', encode: () => this.necEncode(0x04, 0x44), label: 'OK' },
 					]
 				},
 				{
@@ -204,9 +205,9 @@
 					description: 'IN_START → EZ_ADJUST\nAdvanced service menu access.',
 					tvState: 'ON', warningLevel: 1,
 					steps: [
-					{ type: 'ir', encode: () => necEncode(0x04, 0xFA), label: 'IN_START' },
+					{ type: 'ir', encode: () => this.necEncode(0x04, 0xFA), label: 'IN_START' },
 					{ type: 'delay', ms: 500 },
-					{ type: 'ir', encode: () => necEncode(0x04, 0xFF), label: 'EZ_ADJUST' },
+					{ type: 'ir', encode: () => this.necEncode(0x04, 0xFF), label: 'EZ_ADJUST' },
 					]
 				},
 
@@ -216,19 +217,19 @@
 					description: '3-1-9-7-5-3-Mute\nOpens BDS Hotel Mode Setup menu. TV must be on an analog channel.',
 					tvState: 'ON', warningLevel: 0,
 					steps: [
-					{ type: 'ir', encode: () => rc5Encode(0x00, 0x03), label: '3', freq: 36000 },
+					{ type: 'ir', encode: () => this.rc5Encode(0x00, 0x03), label: '3', freq: 36000 },
 					{ type: 'delay', ms: 300 },
-					{ type: 'ir', encode: () => rc5Encode(0x00, 0x01), label: '1', freq: 36000 },
+					{ type: 'ir', encode: () => this.rc5Encode(0x00, 0x01), label: '1', freq: 36000 },
 					{ type: 'delay', ms: 300 },
-					{ type: 'ir', encode: () => rc5Encode(0x00, 0x09), label: '9', freq: 36000 },
+					{ type: 'ir', encode: () => this.rc5Encode(0x00, 0x09), label: '9', freq: 36000 },
 					{ type: 'delay', ms: 300 },
-					{ type: 'ir', encode: () => rc5Encode(0x00, 0x07), label: '7', freq: 36000 },
+					{ type: 'ir', encode: () => this.rc5Encode(0x00, 0x07), label: '7', freq: 36000 },
 					{ type: 'delay', ms: 300 },
-					{ type: 'ir', encode: () => rc5Encode(0x00, 0x05), label: '5', freq: 36000 },
+					{ type: 'ir', encode: () => this.rc5Encode(0x00, 0x05), label: '5', freq: 36000 },
 					{ type: 'delay', ms: 300 },
-					{ type: 'ir', encode: () => rc5Encode(0x00, 0x03), label: '3', freq: 36000 },
+					{ type: 'ir', encode: () => this.rc5Encode(0x00, 0x03), label: '3', freq: 36000 },
 					{ type: 'delay', ms: 300 },
-					{ type: 'ir', encode: () => rc5Encode(0x00, 0x0D), label: 'Mute', freq: 36000 },
+					{ type: 'ir', encode: () => this.rc5Encode(0x00, 0x0D), label: 'Mute', freq: 36000 },
 					]
 				},
 				{
@@ -236,19 +237,19 @@
 					description: '0-6-2-5-9-6-Menu\nMain service/factory menu. ~70% of Philips models.',
 					tvState: 'ON', warningLevel: 1,
 					steps: [
-					{ type: 'ir', encode: () => rc5Encode(0x00, 0x00), label: '0', freq: 36000 },
+					{ type: 'ir', encode: () => this.rc5Encode(0x00, 0x00), label: '0', freq: 36000 },
 					{ type: 'delay', ms: 200 },
-					{ type: 'ir', encode: () => rc5Encode(0x00, 0x06), label: '6', freq: 36000 },
+					{ type: 'ir', encode: () => this.rc5Encode(0x00, 0x06), label: '6', freq: 36000 },
 					{ type: 'delay', ms: 200 },
-					{ type: 'ir', encode: () => rc5Encode(0x00, 0x02), label: '2', freq: 36000 },
+					{ type: 'ir', encode: () => this.rc5Encode(0x00, 0x02), label: '2', freq: 36000 },
 					{ type: 'delay', ms: 200 },
-					{ type: 'ir', encode: () => rc5Encode(0x00, 0x05), label: '5', freq: 36000 },
+					{ type: 'ir', encode: () => this.rc5Encode(0x00, 0x05), label: '5', freq: 36000 },
 					{ type: 'delay', ms: 200 },
-					{ type: 'ir', encode: () => rc5Encode(0x00, 0x09), label: '9', freq: 36000 },
+					{ type: 'ir', encode: () => this.rc5Encode(0x00, 0x09), label: '9', freq: 36000 },
 					{ type: 'delay', ms: 200 },
-					{ type: 'ir', encode: () => rc5Encode(0x00, 0x06), label: '6', freq: 36000 },
+					{ type: 'ir', encode: () => this.rc5Encode(0x00, 0x06), label: '6', freq: 36000 },
 					{ type: 'delay', ms: 200 },
-					{ type: 'ir', encode: () => rc5Encode(0x00, 0x12), label: 'Menu', freq: 36000 },
+					{ type: 'ir', encode: () => this.rc5Encode(0x00, 0x12), label: 'Menu', freq: 36000 },
 					]
 				},
 
@@ -258,13 +259,13 @@
 					description: 'Display → 5 → Vol+ → Power\nTV must be OFF (standby). Powers on into service mode.',
 					tvState: 'OFF', warningLevel: 1,
 					steps: [
-					{ type: 'ir', encode: () => sonyEncode(0x01, 0x3A), label: 'Display', freq: 40000 },
+					{ type: 'ir', encode: () => this.sonyEncode(0x01, 0x3A), label: 'Display', freq: 40000 },
 					{ type: 'delay', ms: 250 },
-					{ type: 'ir', encode: () => sonyEncode(0x01, 0x04), label: '5', freq: 40000 },
+					{ type: 'ir', encode: () => this.sonyEncode(0x01, 0x04), label: '5', freq: 40000 },
 					{ type: 'delay', ms: 250 },
-					{ type: 'ir', encode: () => sonyEncode(0x01, 0x12), label: 'Vol+', freq: 40000 },
+					{ type: 'ir', encode: () => this.sonyEncode(0x01, 0x12), label: 'Vol+', freq: 40000 },
 					{ type: 'delay', ms: 250 },
-					{ type: 'ir', encode: () => sonyEncode(0x01, 0x15), label: 'Power', freq: 40000 },
+					{ type: 'ir', encode: () => this.sonyEncode(0x01, 0x15), label: 'Power', freq: 40000 },
 					]
 				},
 
@@ -274,17 +275,17 @@
 					description: 'Sends power commands for Samsung, LG, Sony, Philips, Toshiba, and Hisense.\nOne tap to turn off any TV.',
 					tvState: 'ON', warningLevel: 0,
 					steps: [
-					{ type: 'ir', encode: () => samsung32Encode(0x07, 0x02), label: 'Samsung' },
+					{ type: 'ir', encode: () => this.samsung32Encode(0x07, 0x02), label: 'Samsung' },
 					{ type: 'delay', ms: 400 },
-					{ type: 'ir', encode: () => necEncode(0x04, 0x08), label: 'LG' },
+					{ type: 'ir', encode: () => this.necEncode(0x04, 0x08), label: 'LG' },
 					{ type: 'delay', ms: 400 },
-					{ type: 'ir', encode: () => sonyEncode(0x01, 0x15), label: 'Sony', freq: 40000 },
+					{ type: 'ir', encode: () => this.sonyEncode(0x01, 0x15), label: 'Sony', freq: 40000 },
 					{ type: 'delay', ms: 400 },
-					{ type: 'ir', encode: () => rc5Encode(0x00, 0x0C), label: 'Philips', freq: 36000 },
+					{ type: 'ir', encode: () => this.rc5Encode(0x00, 0x0C), label: 'Philips', freq: 36000 },
 					{ type: 'delay', ms: 400 },
-					{ type: 'ir', encode: () => necEncode(0x40, 0x12), label: 'Toshiba' },
+					{ type: 'ir', encode: () => this.necEncode(0x40, 0x12), label: 'Toshiba' },
 					{ type: 'delay', ms: 400 },
-					{ type: 'ir', encode: () => necEncode(0x00, 0x08), label: 'Hisense' },
+					{ type: 'ir', encode: () => this.necEncode(0x00, 0x08), label: 'Hisense' },
 					]
 				},
 			];
@@ -410,6 +411,10 @@
 				}
 				if(body.device_type != ''){
 					this.isDeviceConnected = true;
+					const dongle_container_el = this.view.querySelector('extension-infrared-dongle-container');
+					if(dongle_container_el){
+						dongle_container_el.innerHTML = '<h2>IR dongle connnected</h2><img src="/extensions/infrared/images/' + body.device_type + '.svg"><p>' + body.device_type + '</p>';
+					}
 				}
 			}
 
@@ -498,6 +503,8 @@
 
 									parameter = parameter.replaceAll("'","");
 
+									
+
 								}
 							}
 							
@@ -505,16 +512,19 @@
 							script = script.replaceAll('()','');
 							if(typeof this[script] == 'function'){
 								
-								if(parameter){
+								if(typeof parameter == 'string'){
 									if(this.debug){
-									console.log("infrared: attempting to call function: ", script, ", with parameter: ", parameter);
-								}
+										console.log("infrared: attempting to call function: ", script, ", with parameter: ", parameter);
+									}
+									if(!isNaN(Number(parameter))){
+										parameter = parseInt(parameter);
+									}
 									this[script](parameter);
 								}
 								else{
 									if(this.debug){
-									console.log("infrared: attempting to call function: ", script);
-								}
+										console.log("infrared: attempting to call function: ", script);
+									}
 									this[script]();
 								}
 								
@@ -892,7 +902,7 @@ sonyEncode(addr, cmd, bits=12) {
   for (let rep=0;rep<3;rep++) {
     p.push(2400, -600);
     for (let i=0;i<7;i++) { p.push((cmd>>i)&1 ? 1200 : 600); p.push(-600); }
-    const addrBits = bits === 12 ? 5 : bits === 15 ? 8 : 5;
+    const addrBits = bits === 12 ? 5 : bits === 15 ? 8 : 5;s
     for (let i=0;i<addrBits;i++) { p.push((addr>>i)&1 ? 1200 : 600); p.push(-600); }
     p[p.length-1] = -45000;
   }
@@ -901,14 +911,14 @@ sonyEncode(addr, cmd, bits=12) {
 
 encodeProtocol(proto, addr, cmd) {
   switch (proto) {
-    case 'nec': case 'nec1': return necEncode(addr & 0xFF, cmd & 0xFF);
-    case 'necext': case 'necx1': case 'necx2': case 'nec42': return necExtEncode((addr >> 8) & 0xFF, addr & 0xFF, cmd & 0xFF);
-    case 'samsung32': return samsung32Encode(addr & 0xFF, cmd & 0xFF);
-    case 'rc5': case 'rc5x': return rc5Encode(addr & 0x1F, cmd & 0x3F);
-    case 'sirc': case 'sirc12': case 'sony12': return sonyEncode(addr, cmd, 12);
-    case 'sirc15': case 'sony15': return sonyEncode(addr, cmd, 15);
-    case 'sirc20': case 'sony20': return sonyEncode(addr, cmd, 20);
-    default: return necEncode(addr & 0xFF, cmd & 0xFF);
+    case 'nec': case 'nec1': return this.necEncode(addr & 0xFF, cmd & 0xFF);
+    case 'necext': case 'necx1': case 'necx2': case 'nec42': return this.necExtEncode((addr >> 8) & 0xFF, addr & 0xFF, cmd & 0xFF);
+    case 'samsung32': return this.samsung32Encode(addr & 0xFF, cmd & 0xFF);
+    case 'rc5': case 'rc5x': return this.rc5Encode(addr & 0x1F, cmd & 0x3F);
+    case 'sirc': case 'sirc12': case 'sony12': return this.sonyEncode(addr, cmd, 12);
+    case 'sirc15': case 'sony15': return this.sonyEncode(addr, cmd, 15);
+    case 'sirc20': case 'sony20': return this.sonyEncode(addr, cmd, 20);
+    default: return this.necEncode(addr & 0xFF, cmd & 0xFF);
   }
 }
 
@@ -1044,7 +1054,7 @@ parseIRemoteJson(text, fileName) {
           const proto = (btn.protocol || '').toLowerCase().replace(/_/g, '');
           const addr = Number(btn.address) || 0;
           const cmd = Number(btn.command) || 0;
-          pulses = encodeProtocol(proto, addr, cmd);
+          pulses = this.encodeProtocol(proto, addr, cmd);
         }
         if (pulses && pulses.length > 0) {
           allButtons.push({ name: btn.label || btn.name || 'Button', pulses, freq });
@@ -1086,7 +1096,7 @@ parseFlipperIR(text, fileName) {
       const proto = (lines.protocol || '').toLowerCase();
       const addr = parseFlipperHex(lines.address || '0');
       const cmd = parseFlipperHex(lines.command || '0');
-      pulses = encodeProtocol(proto, addr, cmd);
+      pulses = this.encodeProtocol(proto, addr, cmd);
     }
     if (pulses && pulses.length > 0) buttons.push({ name: name.replace(/_/g, ' '), pulses, freq: 38000 });
   }
@@ -1107,7 +1117,7 @@ parseIRDBCsv(text, fileName) {
 			const [funcName, protocol, device, subdevice, func] = cols;
 			const d = parseInt(device), s = parseInt(subdevice), f = parseInt(func);
 			if (isNaN(d) || isNaN(f)) continue;
-			const pulses = encodeProtocol(protocol.toLowerCase(), d | ((isNaN(s) ? 0 : s) << 8), f);
+			const pulses = this.encodeProtocol(protocol.toLowerCase(), d | ((isNaN(s) ? 0 : s) << 8), f);
 			if(this.debug){
 				console.log("infrared debug: parseIRDBCsv: pulses: ", pulses);
 			}
@@ -1615,6 +1625,7 @@ renderIrdb() { // irdbIndex=null
 		const irdb_back_button_el = this.view.querySelector('#extension-infrared-irdb-back');
 		if(irdb_back_button_el){
 			irdb_back_button_el.addEventListener('click', () => {
+				console.log("clicked on back button");
 				if(brand){
 					this.irdbNav.brand=null; 
 					this.renderIrdb();
@@ -1694,22 +1705,30 @@ rendersavedRemotes() {
 
 openRemote(idx) {
   const remote = this.savedRemotes[idx];
-  this.view.querySelector('#extension-infrared-modalTitle').textContent = remote.name;
-  const container = this.view.querySelector('#extension-infrared-modalButtons');
-  container.innerHTML = '';
-  remote.buttons.forEach((btn) => {
-    const el = document.createElement('button');
-    el.className = 'extension-infrared-ir-btn';
-    el.style.cssText = 'width:auto; padding:10px 18px; height:auto;';
-    el.textContent = btn.name;
-    el.onclick = () => {
-      if (!this.isDeviceConnected) { this.toast('No infrared USB dongle detected', 'warning'); return; }
-      this.transmitPulses(btn.pulses, btn.freq || 38000);
-      this.toast(`Sent: ${btn.name}`, 'success');
-    };
-    container.appendChild(el);
-  });
-  this.view.querySelector('#extension-infrared-remoteModal').classList.add('extension-infrared-active');
+  console.log("openRemote:  remote: ", typeof remote, remote);
+  if(typeof remote == 'object' && typeof remote.name == 'string'){
+	console.log("openRemote: ok");
+	this.view.querySelector('#extension-infrared-modalTitle').textContent = remote.name;
+	const container = this.view.querySelector('#extension-infrared-modalButtons');
+	container.innerHTML = '';
+	remote.buttons.forEach((btn) => {
+		const el = document.createElement('button');
+		el.className = 'extension-infrared-ir-btn';
+		el.style.cssText = 'width:auto; padding:10px 18px; height:auto;';
+		el.textContent = btn.name;
+		el.onclick = () => {
+			if (!this.isDeviceConnected) { this.toast('No infrared USB dongle detected', 'warning'); return; }
+			this.transmitPulses(btn.pulses, btn.freq || 38000);
+			this.toast(`Sent: ${btn.name}`, 'success');
+		};
+		container.appendChild(el);
+	});
+  	this.view.querySelector('#extension-infrared-remoteModal').classList.add('extension-infrared-active');
+  }
+  else{
+	console.error("did not find index in this.savedRemotes: ", typeof idx, idx, this.savedRemotes);
+  }
+  
 }
 
 closeModal() { this.view.querySelector('#extension-infrared-remoteModal').classList.remove('extension-infrared-active'); }

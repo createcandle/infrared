@@ -1,16 +1,7 @@
 <div id="extension-infrared-content">
     
     <div id="extension-infrared-content-container">
-		<div id="extension-infrared-limitations-hint">
-			<div>
-				<h1>Infrared</h1>
-				<p>This web infrared comes with some limitations. A lot of websites cannot be opened because those sites do not allow themselves to be embedded inside another website.</p>
-				<div style="text-align:right">
-					<button class="text-button" id="extension-infrared-accept-limitations-button">I understand</button>
-				</div>
-				
-			</div>
-		</div>
+		
         <div id="extension-infrared-main">
 		    
 
@@ -60,15 +51,28 @@
 	<h3 id="extension-infrared-title">Infrared</h3>
 
   <div class="extension-infrared-tabs">
-    <button class="extension-infrared-tab extension-infrared-active" data-tab="remote">🎮 Remote</button>
-    <button class="extension-infrared-tab" data-tab="saved">💾 Overview</button>
+    <button class="extension-infrared-tab extension-infrared-active" data-tab="hotel">🎬 Macros</button>
     <button class="extension-infrared-tab" data-tab="record">🔴 Learn</button>
-    <button class="extension-infrared-tab" data-tab="hotel">🎬 Macros</button>
+    <button class="extension-infrared-tab" data-tab="remote">🎮 Remote</button>
+    <button class="extension-infrared-tab" data-tab="saved">💾 Remotes</button>
     <button class="extension-infrared-tab" data-tab="database">📚 Database</button>
     <button class="extension-infrared-tab" data-tab="import">📂 Import</button>
   </div>
 
-  <div class="extension-infrared-tab-panel extension-infrared-active" id="extension-infrared-tab-remote">
+  	<div id="extension-infrared-dongle-container" class="extension-infrared-area"></div>
+	<div id="extension-infrared-no-dongle-hint" class="extension-infrared-area">
+		<h2>No USB dongle detected</h2>
+		<p>Plug in a USB Infrared 'blaster' that can both send and receive, such as:</p>
+		<div class="extension-infrared-flex-column-if-narrow">
+			<p><img src="/extensions/infrared/images/OCRUSTAR.svg"><span>OCRUSTAR</span></p>
+			<p><img src="/extensions/infrared/images/TIQIAA.svg"><span>TIQIAA</span></p>
+		</div>
+		<div>
+			<button id="extension-infrared-try-detect-dongle-again-button" class="text-button">Detect</button>
+		</div>
+	</div>
+
+  <div class="extension-infrared-tab-panel" id="extension-infrared-tab-remote">
     <div class="extension-infrared-card" style="margin-bottom:16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
       <span class="extension-infrared-card-title" style="margin-bottom:0;">Device Type:</span>
       <div class="extension-infrared-select-wrap">
@@ -190,7 +194,7 @@
     </div>
   </div>
 
-  <div class="extension-infrared-tab-panel" id="extension-infrared-tab-hotel">
+  <div class="extension-infrared-tab-panel extension-infrared-active" id="extension-infrared-tab-hotel">
     
 	<div class="extension-infrared-card">
 		<!--

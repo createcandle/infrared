@@ -177,35 +177,44 @@ class InfraredAPIHandler(APIHandler):
             print("="*52)
             print(f"  pyusb: {'OK' if usb_available else 'NOT INSTALLED'}")
 
-        if usb_available:
-            devs = list_usb_devices()
-            if devs:
-                if self.DEBUG:
-                    print(f"  {len(devs)} USB devices:")
-                for d in devs:
-                    m = ''
-                    
-                    if d['vid']==f'0x{TIQ_VID:04X}' and d['pid']==f'0x{TIQ_PID:04X}': 
-                        m=' ← TIQIAA'
-                        self.device_type = 'TIQIAA'
-                        if 'product' in d:
-                            self.device_product_name = str(d['product'])
-                        self.dongle = d
-                        self.on_connect_tiqiaa()
-                        break
-                    elif d['vid']==f'0x{OCRU_VID:04X}': 
-                        m=' ← OCRUSTAR'
-                        self.device_type = 'OCRUSTAR'
-                        if 'product' in d:
-                            self.device_product_name = str(d['product'])
-                        self.dongle = d
-                        self.on_connect_ocrustar()
-                        break
+
+        self.detect_dongle()
+
+
+    def detect_dongle(self):
+        try:
+            if usb_available:
+                devs = list_usb_devices()
+                if devs:
                     if self.DEBUG:
-                        print(f"    {d['vid']}:{d['pid']} — {d['product']}{m}")
-        #if self.DEBUG:
-        #    print(f"\n  http://localhost:7890\n{'='*52}")
-        #socketio.run(app, host='0.0.0.0', port=7890, debug=False, allow_unsafe_werkzeug=True)
+                        print(f"  {len(devs)} USB devices:")
+                    for d in devs:
+                        m = ''
+                        if d['vid']==f'0x{TIQ_VID:04X}' and d['pid']==f'0x{TIQ_PID:04X}': 
+                            m=' ← TIQIAA'
+                            self.device_type = 'TIQIAA'
+                            if 'product' in d:
+                                self.device_product_name = str(d['product'])
+                            self.dongle = d
+                            self.on_connect_tiqiaa()
+                            break
+                        elif d['vid']==f'0x{OCRU_VID:04X}': 
+                            m=' ← OCRUSTAR'
+                            self.device_type = 'OCRUSTAR'
+                            if 'product' in d:
+                                self.device_product_name = str(d['product'])
+                            self.dongle = d
+                            self.on_connect_ocrustar()
+                            break
+                        if self.DEBUG:
+                            print(f"    {d['vid']}:{d['pid']} — {d['product']}{m}")
+            #if self.DEBUG:
+            #    print(f"\n  http://localhost:7890\n{'='*52}")
+            #socketio.run(app, host='0.0.0.0', port=7890, debug=False, allow_unsafe_werkzeug=True)
+
+        except Exception as ex:
+            print("caught error in detect_dongle: ", ex)
+        
 
 
 
@@ -242,7 +251,9 @@ class InfraredAPIHandler(APIHandler):
 
     def on_connect_tiqiaa(self):
         global connected_device, device_type, tiq_cmd_id, tiq_pkt_idx
-        if not usb_available: emit('error', {'msg': 'pyusb not installed'}); return
+        if not usb_available: 
+            emit('error', {'msg': 'pyusb not installed'})
+            return
         with device_lock:
             #dev = usb.core.find(idVendor=TIQ_VID, idProduct=TIQ_PID, backend=usb_backend)
             dev = self.dongle
@@ -257,7 +268,8 @@ class InfraredAPIHandler(APIHandler):
             except Exception as e:
                 emit('log', {'msg': f'Interface claim: {e}', 'cls': 'err'})
 
-            connected_device = dev; device_type = 'tiqiaa'
+            connected_device = dev
+            device_type = 'tiqiaa'
             tiq_cmd_id = 0; tiq_pkt_idx = 0
 
             # Drain stale data
@@ -542,8 +554,11 @@ class InfraredAPIHandler(APIHandler):
                     backend_ip = None
 
                 # INIT
-                if action == 'init':
+                if action == 'init' or action == 'detect':
                     
+                    if action == 'detect':
+                        self.detect_dongle()
+                        
                     return APIResponse(
                       status=200,
                       content_type='application/json',
