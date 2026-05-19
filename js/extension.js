@@ -428,7 +428,7 @@
 					
 				}
 				if(typeof body.remotes.iremote_custom_macros != 'undefined'){
-					this.customMacros = body.remotes.remote_custom_macros;
+					this.customMacros = body.remotes.iremote_custom_macros;
 				}
 
 			}
@@ -814,7 +814,7 @@ disconnectDevice() {
 // ═══════════════════════════════════════════════════
 
 transmitPulses(pulses, freqHz = 38000) {
-  if (!this.isDeviceConnected) { this.toast('Connect a device first', 'warning'); return; }
+  if (!this.isDeviceConnected) { this.toast('No infrared USB dongle detected', 'warning'); return; }
   //if (!this.socket || !this.socket.connected) { this.toast('Server not connected', 'error'); return; }
   // Send signed pulses: positive=mark, negative=space
   // Server handles sign interpretation per device type
@@ -914,7 +914,7 @@ encodeProtocol(proto, addr, cmd) {
 
 
 async sendTV(btn) {
-  if (!this.isDeviceConnected) { this.toast('Connect a device first', 'warning'); return; }
+  if (!this.isDeviceConnected) { this.toast('No infrared USB dongle detected', 'warning'); return; }
   const signals = [
     samsung32Encode(0x07, this.TV_SAMSUNG[btn]),
     necEncode(0x04, this.TV_LG[btn]),
@@ -930,7 +930,7 @@ async sendTV(btn) {
 }
 
 async sendAcPower() {
-  if (!this.isDeviceConnected) { this.toast('Connect a device first', 'warning'); return; }
+  if (!this.isDeviceConnected) { this.toast('No infrared USB dongle detected', 'warning'); return; }
   const addrs = [0x04, 0x10, 0x01, 0x08, 0x6D];
   for (const addr of addrs) {
     this.transmitPulses(necEncode(addr, 0x02));
@@ -946,7 +946,7 @@ adjustTemp(d) {
 
 
 async sendFan(btn) {
-  if (!this.isDeviceConnected) { this.toast('Connect a device first', 'warning'); return; }
+  if (!this.isDeviceConnected) { this.toast('No infrared USB dongle detected', 'warning'); return; }
   const addrs = [0x80, 0x71, 0x60, 0x50, 0x12];
   for (const addr of addrs) {
     this.transmitPulses(necEncode(addr, this.FAN_CMDS[btn]));
@@ -956,7 +956,7 @@ async sendFan(btn) {
 }
 
 async sendProtocolCode() {
-  if (!this.isDeviceConnected) { this.toast('Connect a device first', 'warning'); return; }
+  if (!this.isDeviceConnected) { this.toast('No infrared USB dongle detected', 'warning'); return; }
   const proto = this.view.querySelector('#extension-infrared-protoSelect').value;
   const addr = parseInt(this.view.querySelector('#extension-infrared-protoAddr').value) || 0;
   const cmd = parseInt(this.view.querySelector('#extension-infrared-protoCmd').value) || 0;
@@ -979,7 +979,7 @@ async sendProtocolCode() {
 // ═══════════════════════════════════════════════════
 
 toggleRecord() {
-  if (!this.isDeviceConnected) { this.toast('Connect a device first', 'warning'); return; }
+  if (!this.isDeviceConnected) { this.toast('No infrared USB dongle detected', 'warning'); return; }
   if (!this.isRecording) {
     this.isRecording = true;
     this.view.querySelector('#extension-infrared-recordBtn').classList.add('extension-infrared-recording');
@@ -1163,7 +1163,7 @@ showImported(fileName, buttons) {
 }
 
 sendImportedButton(idx) {
-  if (!this.isDeviceConnected) { this.toast('Connect a device first', 'warning'); return; }
+  if (!this.isDeviceConnected) { this.toast('No infrared USB dongle detected', 'warning'); return; }
   const btn = this.importedButtons[idx];
   this.transmitPulses(btn.pulses, btn.freq || 38000);
   this.toast(`Sent: ${btn.name}`, 'success');
@@ -1238,7 +1238,7 @@ renderHotelMacros() {
 async runHotelMacro(id) {
   const macro = this.HOTEL_MACROS.find(m => m.id === id);
   if (!macro) return;
-  if (!this.isDeviceConnected) { this.toast('Connect a device first', 'warning'); return; }
+  if (!this.isDeviceConnected) { this.toast('No infrared USB dongle detected', 'warning'); return; }
   if (this.macroRunning) { this.toast('Macro already running', 'warning'); return; }
 
   // Warning dialog for dangerous macros
@@ -1703,7 +1703,7 @@ openRemote(idx) {
     el.style.cssText = 'width:auto; padding:10px 18px; height:auto;';
     el.textContent = btn.name;
     el.onclick = () => {
-      if (!this.isDeviceConnected) { this.toast('Connect a device first', 'warning'); return; }
+      if (!this.isDeviceConnected) { this.toast('No infrared USB dongle detected', 'warning'); return; }
       this.transmitPulses(btn.pulses, btn.freq || 38000);
       this.toast(`Sent: ${btn.name}`, 'success');
     };
@@ -1781,7 +1781,7 @@ addToCustomRemote(name, pulses) {
   el.style.cssText = 'width:auto; padding:10px 18px; height:auto;';
   el.textContent = name;
   el.onclick = () => {
-    if (!this.isDeviceConnected) { this.toast('Connect a device first', 'warning'); return; }
+    if (!this.isDeviceConnected) { this.toast('No infrared USB dongle detected', 'warning'); return; }
     this.transmitPulses(pulses);
     this.toast(`Sent: ${name}`, 'success');
   };
@@ -1835,7 +1835,7 @@ renderBatchList() {
 }
 
 async startBatchLearn() {
-  if (!this.isDeviceConnected) { this.toast('Connect a device first', 'warning'); return; }
+  if (!this.isDeviceConnected) { this.toast('No infrared USB dongle detected', 'warning'); return; }
   if (this.batchButtons.length === 0) { this.toast('Add buttons first', 'warning'); return; }
 
   this.batchLearning = true;

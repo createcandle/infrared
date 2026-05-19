@@ -613,7 +613,7 @@ class InfraredAPIHandler(APIHandler):
                     state = False
                     try:
                         if 'id' in request.body and 'data' in request.body and isinstance(request.body['id'],str) and request.body['id'] != '':
-                            self.persistent_data['remotes'][request.body['id']] = request.body.data;
+                            self.persistent_data['remotes'][request.body['id']] = request.body['data'];
                             self.save_persistent_data();
                             state = True
                     except Exception as ex:
