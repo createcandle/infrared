@@ -24,9 +24,10 @@
 
             //console.log(window.API);
 
-            this.debug = false;
-            this.content = '';
+      this.debug = false;
+      this.content = '';
 
+      this.busy_doing_poll = false;
 
 			this.backend_ip = '127.0.0.1';
 
@@ -35,20 +36,25 @@
 			// ═══════════════════════════════════════════════════
 
 			// ── State ──
+      
 			this.socket = null;
 			this.isDeviceConnected = false;
 			this.isRecording = false;
+      this.allCapturedPulses = {}
 			this.capturedPulses = null;
+      this.learned_code = null;
 			this.acTemp = 24;
 			this.savedRemotes = []; //JSON.parse(localStorage.getItem('iremote_saved') || '[]');
 			this.importedButtons = [];
-
+      this.dongle_ready = false;
+      this.suggested_remote_name = '';
 
 
 			this.hotelSelectedBrand = null;
 			this.macroRunning = false;
+      this.show_extra_macros = false;
 
-
+      this.thing_actions = {};
 			
 			// ═══════════════════════════════════════════════════
 			//  UNIVERSAL TV REMOTE
@@ -66,7 +72,7 @@
 			// ═══════════════════════════════════════════════════
 			this.HOTEL_MACROS = [];
 
-			this.HOTEL_MACROS_DEV = [
+			this.HOTEL_TV_MACROS = [
 				// ===== SAMSUNG =====
 				{
 					id: 'samsung_hotel_primary', name: 'Hotel Menu', brand: 'Samsung',
@@ -364,21 +370,21 @@
 
 
 
-            fetch(`/extensions/${this.id}/views/content.html`)
-                .then((res) => res.text())
-                .then((text) => {
+      fetch(`/extensions/${this.id}/views/content.html`)
+      .then((res) => res.text())
+      .then((text) => {
                     this.content = text;
                     if (location.pathname == "/extensions/infrared") {
                         this.show();
                     }
-                })
-                .catch((e) => console.error('infrared: failed to fetch content:', e));
+      })
+      .catch((e) => console.error('infrared: failed to fetch content:', e));
 
 
-            window.API.postJson(
-                `/extensions/${this.id}/api/ajax`, {'action': 'init'}
+      window.API.postJson(
+        `/extensions/${this.id}/api/ajax`, {'action': 'init'}
 
-            ).then((body) => {
+      ).then((body) => {
 				if(typeof body.debug != 'undefined'){
 					this.debug = body.debug;
 				}
@@ -387,14 +393,36 @@
 				}
 				this.parse_body(body);
 
-            }).catch((err) => {
-                console.error("Infrared: caught error in early init function: ", err);
-            });
+      }).catch((err) => {
+        console.error("Infrared: caught error in early init function: ", err);
+      });
 
 
-        }
+    }
 
+    do_poll(){
+      if(this.busy_doing_poll == false){
+        this.busy_doing_poll = true;
+        window.API.postJson(
+          `/extensions/${this.id}/api/ajax`, {'action': 'poll'}
 
+        ).then((body) => {
+          if(typeof body.debug != 'undefined'){
+            this.debug = body.debug;
+          }
+          if(this.debug){
+            console.log("infrared debug: poll response: ", body);
+          }
+          
+          this.parse_body(body);
+          this.busy_doing_poll = false;
+
+        }).catch((err) => {
+          console.error("Infrared: caught error calling poll: ", err);
+          this.busy_doing_poll = false;
+        });
+      }
+    }
 
 		parse_body(body){
 			if(this.debug){
@@ -405,24 +433,60 @@
 				this.backend_ip = body.backend_ip;
 			}
 			
-			if(typeof body.device_type == 'string'){
-				if(this.debug){
-					console.log("infrared debug: device_type: ", body.device_type);
-				}
-				if(body.device_type != ''){
-					this.isDeviceConnected = true;
-					const dongle_container_el = this.view.querySelector('extension-infrared-dongle-container');
-					if(dongle_container_el){
-						dongle_container_el.innerHTML = '<h2>IR dongle connnected</h2><img src="/extensions/infrared/images/' + body.device_type + '.svg"><p>' + body.device_type + '</p>';
-					}
-				}
-			}
+      const dongle_container_el = this.view.querySelector('#extension-infrared-dongle-container');
+      if(dongle_container_el){
+        if(this.debug){
+          console.log("infrared debug: dongle_ready: ", body.dongle_ready);
+        }
+        this.dongle_ready = body.dongle_ready;
+        if(typeof body.dongle_ready == 'boolean' && body.dongle_ready == true){
+          dongle_container_el.classList.add('extension-infrared-dongle-is-ready');
+        }else{
+          dongle_container_el.classList.remove('extension-infrared-dongle-is-ready');
+        }
+        if(typeof body.device_type == 'string'){
+          if(this.debug){
+            console.log("infrared debug: device_type: ", body.device_type);
+          }
+          if(body.device_type == ''){
+            dongle_container_el.innerHTML = '';
+          }else{
+            this.isDeviceConnected = true;
+            let ocrustar_variant = '';
+            if(typeof body.ocrustar_variant == 'string' && body.ocrustar_variant != '' && body.ocrustar_variant.length < 8){
+              ocrustar_variant = ' (' + body.ocrustar_variant + ')'
+            }
+            dongle_container_el.innerHTML = '<img src="/extensions/infrared/images/' + body.device_type + '.svg"><p>' + body.device_type + ocrustar_variant + '</p>';
+          }
+        }
+        
+      }
+
+			
+      
 
 			if(typeof body.device_product_name == 'string'){
 				if(this.debug){
 					console.log("infrared debug: device_product_name: ", body.device_product_name);
 				}
 			}
+
+      if(typeof body.thing_state == 'boolean'){
+				if(this.debug){
+					console.log("infrared debug: body.thing_state: ", body.thing_state);
+				}
+        const state_hint_el = this.view.querySelector('#extension-infrared-disabled-state-hint');
+        if(state_hint_el){
+          if(body.thing_state == true){
+            state_hint_el.classList.add('extension-infrared-hidden');
+          }
+          else{
+            state_hint_el.classList.remove('extension-infrared-hidden');
+          }
+        }
+			}
+
+
 		
 			if(typeof body.remotes != 'undefined'){
 				if(this.debug){
@@ -436,7 +500,21 @@
 					this.customMacros = body.remotes.iremote_custom_macros;
 				}
 
+        if(typeof body.remotes.iremote_captured_pulses != 'undefined'){
+					this.allCapturedPulses = body.remotes.iremote_captured_pulses;
+				}
+
+         if(typeof body.remotes.thing_actions != 'undefined'){
+					this.thing_actions = body.remotes.thing_actions;
+				}
+
 			}
+
+
+      if(typeof body.show_extra_macros == 'boolean'){
+        this.show_extra_macros = body.show_extra_macros;
+      }
+      
 			
                
 		}
@@ -447,16 +525,16 @@
 
 
 
-        show() {
-            if(this.debug){
+    show() {
+      if(this.debug){
 				console.log("infrared debug: in show()");
 			}
 
-            if (this.content == '') {
-                return;
-            } else {
-                this.view.innerHTML = this.content;
-            }
+      if (this.content == '') {
+          return;
+      } else {
+          this.view.innerHTML = this.content;
+      }
 
 			/*
 			if(localStorage.getItem('extension-infrared-shown-limitations-hint') == null){
@@ -478,7 +556,7 @@
 			if(infrared_main_el){
 				infrared_main_el.addEventListener('click', (event) => {
 					if(this.debug){
-						console.log("infrared debug: clicked on: ", event.target.TAGNAME);
+						console.log("infrared debug: clicked on: ", event.target);
 					}
 					let script = event.target.getAttribute('data-onclick');
 					if(!script){
@@ -495,10 +573,10 @@
 							}
 							else if(script.indexOf('(') != -1){
 								const matches = script.match(/\((.*?)\)/);
-								console.log("matches: ", matches);
+								//console.log("matches: ", matches);
 								if (matches) {
 									parameter = matches[1];
-									console.log("parameter: ", parameter);
+									//console.log("parameter: ", parameter);
 									script = script.replace('(' + parameter + ')','');
 
 									parameter = parameter.replaceAll("'","");
@@ -514,7 +592,7 @@
 								
 								if(typeof parameter == 'string'){
 									if(this.debug){
-										console.log("infrared: attempting to call function: ", script, ", with parameter: ", parameter);
+										console.log("infrared debug: attempting to call function: ", script, ", with parameter: ", parameter);
 									}
 									if(!isNaN(Number(parameter))){
 										parameter = parseInt(parameter);
@@ -523,7 +601,7 @@
 								}
 								else{
 									if(this.debug){
-										console.log("infrared: attempting to call function: ", script);
+										console.log("infrared debug: attempting to call function: ", script);
 									}
 									this[script]();
 								}
@@ -531,7 +609,9 @@
 							}
 						}
 						else{
-							console.warn("Script is too complex to call: ", script);
+							if(this.debug){
+                console.warn("infrared debug: script is too complex to call: ", script);
+              }
 						}
 					}
 				})
@@ -545,9 +625,111 @@
 					tab.classList.add('extension-infrared-active');
 					this.view.querySelector('#extension-infrared-tab-' + tab.dataset.tab).classList.add('extension-infrared-active');
 					if (tab.dataset.tab === 'database') this.loadirdbIndex();
+          else if(tab.dataset.tab === 'remote'){
+            this.render_thing_actions_list();
+          }
+          this.do_poll();
 				});
 			});
 
+      const retry_connecting_to_dongle_button_el = this.view.querySelector('#extension-infrared-try-detect-dongle-again-button');
+      if(retry_connecting_to_dongle_button_el){
+        retry_connecting_to_dongle_button_el.addEventListener('click', () => {
+          retry_connecting_to_dongle_button_el.classList.add('extension-infrared-faded');
+          setTimeout(() => {
+            retry_connecting_to_dongle_button_el.classList.remove('extension-infrared-faded');
+          },5000);
+          window.API.postJson(
+            `/extensions/${this.id}/api/ajax`, {'action': 'detect'}
+
+          ).then((body) => {
+            if(this.debug){
+              console.log("infrared debug: detect dongle response: ", body);
+            }
+          }).catch((err) => {
+            console.error("infrared: caught error doing call to detect dongle: ", err);
+          });
+
+        })
+      }
+      
+      const disabled_state_hint_el = this.view.querySelector('#extension-infrared-disabled-state-hint');
+      if(disabled_state_hint_el){
+        disabled_state_hint_el.addEventListener('click', (event) => {
+          window.API.postJson(
+              `/extensions/${this.id}/api/ajax`, {'action': 'enable'}
+
+            ).then((body) => {
+              if(this.debug){
+                console.log("infrared debug: enable thing response: ", body);
+              }
+              if(typeof body.state == 'boolean' && body.state == true){
+                disabled_state_hint_el.classList.add('extension-infrared-hidden');
+              }
+            }).catch((err) => {
+              console.error("infrared: caught error doing call to enable thing ", err);
+            });
+        });
+      }
+      
+      const dongle_container_el = this.view.querySelector('#extension-infrared-dongle-container');
+      if(dongle_container_el){
+        dongle_container_el.addEventListener('click', () => {
+          dongle_container_el.classList.add('extension-infrared-hidden');
+        });
+      }
+      
+      const add_remote_button_el = this.view.querySelector('#extension-infrared-add-remote-button');
+      if(add_remote_button_el){
+        add_remote_button_el.addEventListener('click', () => {
+          const db_tab_el = this.view.querySelector('.extension-infrared-tab[data-tab="database"]');
+          if(db_tab_el){
+            db_tab_el.click();
+          }
+        });
+      }
+
+      
+      const save_delay_button_el = this.view.querySelector('#extension-infrared-save-delay-button');
+      if(save_delay_button_el){
+        save_delay_button_el.addEventListener('click', () => {
+          const delay_input_el = this.view.querySelector('#extension-infrared-delay-input');
+          if(delay_input_el){
+            const ms = parseInt(delay_input_el.value);
+            if (isNaN(ms) || ms <= 0) return;
+            this.customMacroSteps.push({ type: 'delay', ms });
+            delay_input_el.value = 250;
+          }
+          this.view.querySelector('#extension-infrared-delay-modal').close();
+        })
+      }
+      
+      const save_remote_name_button_el = this.view.querySelector('#extension-infrared-save-remote-name-button');
+      if(save_remote_name_button_el){
+        save_remote_name_button_el.addEventListener('click', () => {
+          const remote_name_input_el = this.view.querySelector('#extension-infrared-remote-name-input');
+          if(remote_name_input_el){
+            const new_remote_name = remote_name_input_el.value;
+            if(new_remote_name){
+              console.log("new_remote_name: ", new_remote_name);
+
+              this.savedRemotes.push({ 'name':new_remote_name, 'buttons': this.importedButtons, 'created': Date.now() });
+              //localStorage.setItem('iremote_saved', JSON.stringify(this.savedRemotes));
+              this.save('iremote_saved', this.savedRemotes);
+              this.rendersavedRemotes();
+              const remotes_tab_el = this.view.querySelector('.extension-infrared-tab[data-tab="remote"]');
+              if(remotes_tab_el){
+                remotes_tab_el.click();
+              }
+              this.toast(`Saved "${new_remote_name}" with ${this.importedButtons.length} buttons`, 'success');
+            }
+            remote_name_input_el.value = '';
+          }
+          this.view.querySelector('#extension-infrared-remote-name-modal').close();
+        })
+      }
+
+      
 
 
 			this.view.querySelector('#extension-infrared-batchAddName').addEventListener('onkeydown', (event) => {
@@ -586,14 +768,14 @@
 				
 
 			window.API.postJson(
-                `/extensions/${this.id}/api/ajax`, {'action': 'init'}
+        `/extensions/${this.id}/api/ajax`, {'action': 'init'}
 
-            ).then((body) => {
+      ).then((body) => {
 				if(typeof body.debug != 'undefined'){
 					this.debug = body.debug;
 				}
 				if(this.debug){
-					console.log("infrared early init response: ", body);
+					console.log("infrared debug: early init response: ", body);
 				}
 				this.parse_body(body);
 
@@ -602,24 +784,26 @@
 				this.renderHotelMacros();
 				this.loadCustomMacrosIntoHotel();
 				this.renderMacroSteps();
+        this.render_previously_recorded_signals_list();
+        this.render_thing_actions_list();
 				//this.initSocket();
 
 				this.initHotelTab();
+
+        this.render_thing_actions_list();
 				//this.getCatInfo(key) { return this.IRDB_CAT_INFO[key] || { label: key.replace(/_/g, ' '), emoji: '📱' }; }
-
-
 				//const mode = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'local' : 'GitHub Pages → localhost:7890';
 				this.log(`Infrared loaded... connecting...`, 'info');
 
-            }).catch((err) => {
-                console.error("Infrared: caught error in show() init call: ", err);
-            });
+      }).catch((err) => {
+        console.error("Infrared: caught error in show() init call: ", err);
+      });
 
 			
-        } // end of show function
+    } // end of show function
 
 
-        hide() {
+    hide() {
 			try{
 				setTimeout(() => {
 	                if(document.getElementById('extension-infrared-menu-item').classList.contains('selected') == false){
@@ -627,36 +811,183 @@
 	                }
 				},5000);
 			}
-            catch(err){
-                console.error("infrared: caught error in hide: ", err);
-            }
-        }
+      catch(err){
+        console.error("infrared: caught error in hide: ", err);
+      }
+    }
 
 
 
 		learn(){
 
 			window.API.postJson(
-                `/extensions/${this.id}/api/ajax`, {'action': 'learn'}
-            ).then((body) => {
-				this.isRecording = false;
-				this.view.querySelector('#extension-infrared-recordBtn').classList.remove('extension-infrared-recording');
-				this.capturedPulses = body.pulses;
-				this.view.querySelector('#extension-infrared-recordLabel').textContent = `Captured ${data.count} pulses (${data.duration_ms}ms)!`;
-				this.view.querySelector('#extension-infrared-capturedSignal').style.display = '';
-				this.view.querySelector('#extension-infrared-capturedData').textContent = data.pulses.slice(0, 30).join(', ') + (data.count > 30 ? '...' : '');
-				this.toast('Signal captured!', 'success');
+        `/extensions/${this.id}/api/ajax`, {'action': 'learn'}
+      ).then((body) => {
+        if(this.debug){
+          console.log("infrared debug: learn response: ", body);
+        }
+        this.isRecording = false;
+        this.view.querySelector('#extension-infrared-recordBtn').classList.remove('extension-infrared-recording');
+        if(typeof body.learned_code != 'undefined' && typeof body.learned_code.pulses != 'undefined' && typeof body.learned_code.count == 'number' && typeof body.learned_code.duration_ms == 'number'){
+          this.capturedPulses = body.learned_code.pulses;
+          this.learned_code = body.learned_code;
+          this.view.querySelector('#extension-infrared-recordLabel').textContent = `Captured ${body.learned_code.count} pulses (${body.learned_code.duration_ms}ms)!`;
+          this.view.querySelector('#extension-infrared-capturedSignal').style.display = '';
+          this.view.querySelector('#extension-infrared-capturedData').textContent = body.learned_code.pulses.slice(0, 30).join(', ') + (body.count > 30 ? '...' : '');
+          this.toast('Signal captured!', 'success');
+        }
+        else{
+          this.toast('Learning failed?', 'error');
+        }
 
-            }).catch((err) => {
-                console.error("Infrared: caught error in call to learn ", err);
+      }).catch((err) => {
+        console.error("Infrared: caught error in call to learn ", err);
 				this.isRecording = false;
 				this.view.querySelector('#extension-infrared-recordBtn').classList.remove('extension-infrared-recording');
 				this.toast('Learning failed!', 'error');
-            });
+      });
 
-			
 		}
 
+
+    render_previously_recorded_signals_list(){
+      const signals_list_container_el = this.view.querySelector('#extension-infrared-previously-recorded-signals');
+      if(signals_list_container_el){
+        signals_list_container_el.innerHTML = '';
+        for (const [name, details] of Object.entries(this.allCapturedPulses)) {
+          const recorded_item_el = document.createElement('div');
+
+          recorded_item_el.classList.add('extension-infrared-previously-recorded-item');
+
+          
+          if(typeof details.pulses != 'undefined'){
+            const play_button_el = document.createElement('button');
+            play_button_el.classList.add('extension-infrared-btn');
+            play_button_el.classList.add('extension-infrared-btn-sm');
+            play_button_el.classList.add('extension-infrared-play-captured-signal-button');
+            play_button_el.textContent = '▶';
+            
+            play_button_el.addEventListener('click', () => {
+              
+              this.transmitPulses(details.pulses);
+              this.toast('Replayed captured signal', 'success');
+
+            })
+            recorded_item_el.appendChild(play_button_el);
+          }
+          
+
+          const name_el = document.createElement('span');
+          name_el.textContent = name;
+          recorded_item_el.appendChild(name_el);
+
+          const remove_button_el = document.createElement('button');
+          remove_button_el.classList.add('extension-infrared-btn');
+          remove_button_el.classList.add('extension-infrared-btn-sm');
+          remove_button_el.classList.add('extension-infrared-btn-danger');
+          remove_button_el.textContent = "🗑";
+          remove_button_el.addEventListener('click', () => {
+            if(typeof this.allCapturedPulses[name] != 'undefined'){
+              delete this.allCapturedPulses[name];
+              this.save("iremote_captured_pulses", this.allCapturedPulses);
+              this.toast(`Deleted "${name}"`, 'success');
+              recorded_item_el.remove();
+            }
+          });
+          recorded_item_el.appendChild(remove_button_el);
+
+          signals_list_container_el.appendChild(recorded_item_el);
+        }
+      }
+    }
+
+
+
+    render_thing_actions_list(){
+
+      function sanitize(text){
+        return text.replace(/[^a-zA-Z0-9]/g, '');
+      }
+
+      const actions_list_container_el = this.view.querySelector('#extension-infrared-thing-actions-list-container');
+      if(actions_list_container_el){
+        actions_list_container_el.innerHTML = '';
+        
+        for(let r = 0; r < this.savedRemotes.length; r++){
+          
+        
+          //for (const [name, details] of Object.entries(this.savedRemotes)) {
+          
+          if(typeof this.savedRemotes[r].name == 'string' && this.savedRemotes[r].name.length){
+            
+            const sanitized_remote_name = sanitize(this.savedRemotes[r].name);
+            if(sanitized_remote_name){
+
+              const remote_control_el = document.createElement('div');
+              remote_control_el.classList.add('extension-infrared-actions-remote-control');
+              remote_control_el.setAttribute('data-name',this.savedRemotes[r].name);
+
+              const name_el = document.createElement('h3');
+              name_el.textContent = this.savedRemotes[r].name;
+              remote_control_el.appendChild(name_el);
+
+              const buttons_container_el = document.createElement('div');
+              buttons_container_el.classList.add('extension-infrared-actions-remote-control-button-container');
+
+              for(let b = 0; b < this.savedRemotes[r]['buttons'].length; b++){
+                const remote_control_button_el = document.createElement('div');
+                remote_control_button_el.classList.add('extension-infrared-actions-remote-control-button');
+                
+                const button_name_el = document.createElement('span');
+                button_name_el.textContent = this.savedRemotes[r]['buttons'][b].name;
+                remote_control_button_el.appendChild(button_name_el);
+
+                const sanitized_button_name = sanitize(this.savedRemotes[r]['buttons'][b].name);
+
+                // TODO: ID could still have collisions
+                const button_id = sanitized_remote_name + '---x---' + sanitized_button_name;
+                console.log("button_id: ", button_id)
+                const button_checkbox_el = document.createElement('input');
+                button_checkbox_el.setAttribute('type','checkbox');
+                button_checkbox_el.setAttribute('id', button_id);
+
+                if(typeof this.thing_actions[sanitized_remote_name] != 'undefined' && typeof this.thing_actions[sanitized_remote_name][sanitized_button_name] != 'undefined' && typeof this.thing_actions[sanitized_remote_name][sanitized_button_name]['enabled'] == 'boolean'){
+                  button_checkbox_el.checked = this.thing_actions[sanitized_remote_name][sanitized_button_name]['enabled'];
+                }
+                button_checkbox_el.addEventListener('change', () => {
+                  if(typeof this.thing_actions[sanitized_remote_name] == 'undefined'){
+                    this.thing_actions[sanitized_remote_name] = {};
+                  }
+                  if(typeof this.thing_actions[sanitized_remote_name][sanitized_button_name] == 'undefined'){
+                    this.thing_actions[sanitized_remote_name][sanitized_button_name] = {};
+                  }
+                  this.thing_actions[sanitized_remote_name][sanitized_button_name]['enabled'] = button_checkbox_el.checked;
+
+                  console.warn("changed: ", this.savedRemotes[r]['buttons'][b]);
+                  Object.assign(this.thing_actions[sanitized_remote_name][sanitized_button_name], this.savedRemotes[r]['buttons'][b]);
+
+                  console.log("this.thing_actions for this remote is now: ", sanitized_remote_name, this.thing_actions[sanitized_remote_name]);
+                  this.save('thing_actions', this.thing_actions);
+                })
+
+                remote_control_button_el.appendChild(button_checkbox_el);
+
+                const button_checkbox_label_el = document.createElement('label');
+                button_checkbox_label_el.setAttribute('for', button_id);
+                remote_control_button_el.appendChild(button_checkbox_label_el);
+                buttons_container_el.appendChild(remote_control_button_el);
+                
+              }
+              remote_control_el.appendChild(buttons_container_el);
+              actions_list_container_el.appendChild(remote_control_el);
+
+            }
+
+          }
+          
+        }
+      }
+    }
         
 // ── Toast ──
 toast(msg, type = 'info') {
@@ -926,10 +1257,10 @@ encodeProtocol(proto, addr, cmd) {
 async sendTV(btn) {
   if (!this.isDeviceConnected) { this.toast('No infrared USB dongle detected', 'warning'); return; }
   const signals = [
-    samsung32Encode(0x07, this.TV_SAMSUNG[btn]),
-    necEncode(0x04, this.TV_LG[btn]),
-    sonyEncode(0x01, this.TV_SONY[btn], 12),
-    rc5Encode(0x00, this.TV_RC5[btn])
+    this.samsung32Encode(0x07, this.TV_SAMSUNG[btn]),
+    this.necEncode(0x04, this.TV_LG[btn]),
+    this.sonyEncode(0x01, this.TV_SONY[btn], 12),
+    this.rc5Encode(0x00, this.TV_RC5[btn])
   ];
   //this.log('`Sending TV "${btn}" (multi-blast × ${signals.length})`, 'info');
   for (const pulses of signals) {
@@ -943,7 +1274,7 @@ async sendAcPower() {
   if (!this.isDeviceConnected) { this.toast('No infrared USB dongle detected', 'warning'); return; }
   const addrs = [0x04, 0x10, 0x01, 0x08, 0x6D];
   for (const addr of addrs) {
-    this.transmitPulses(necEncode(addr, 0x02));
+    this.transmitPulses(this.necEncode(addr, 0x02));
     await sleep(60);
   }
   this.toast('AC Power toggle sent', 'success');
@@ -959,7 +1290,7 @@ async sendFan(btn) {
   if (!this.isDeviceConnected) { this.toast('No infrared USB dongle detected', 'warning'); return; }
   const addrs = [0x80, 0x71, 0x60, 0x50, 0x12];
   for (const addr of addrs) {
-    this.transmitPulses(necEncode(addr, this.FAN_CMDS[btn]));
+    this.transmitPulses(this.necEncode(addr, this.FAN_CMDS[btn]));
     await sleep(60);
   }
   this.toast(`Fan: ${btn}`, 'success');
@@ -972,13 +1303,13 @@ async sendProtocolCode() {
   const cmd = parseInt(this.view.querySelector('#extension-infrared-protoCmd').value) || 0;
   let pulses;
   switch (proto) {
-    case 'nec': pulses = necEncode(addr, cmd); break;
-    case 'nec_ext': pulses = necExtEncode((addr >> 8) & 0xFF, addr & 0xFF, cmd); break;
-    case 'samsung32': pulses = samsung32Encode(addr, cmd); break;
-    case 'rc5': pulses = rc5Encode(addr, cmd); break;
-    case 'sony12': pulses = sonyEncode(addr, cmd, 12); break;
-    case 'sony15': pulses = sonyEncode(addr, cmd, 15); break;
-    default: pulses = necEncode(addr, cmd);
+    case 'nec': pulses = this.necEncode(addr, cmd); break;
+    case 'nec_ext': pulses = this.necExtEncode((addr >> 8) & 0xFF, addr & 0xFF, cmd); break;
+    case 'samsung32': pulses = this.samsung32Encode(addr, cmd); break;
+    case 'rc5': pulses = this.rc5Encode(addr, cmd); break;
+    case 'sony12': pulses = this.sonyEncode(addr, cmd, 12); break;
+    case 'sony15': pulses = this.sonyEncode(addr, cmd, 15); break;
+    default: pulses = this.necEncode(addr, cmd);
   }
   this.transmitPulses(pulses);
   this.toast(`Sent ${proto.toUpperCase()} addr=0x${addr.toString(16)} cmd=0x${cmd.toString(16)}`, 'success');
@@ -1004,7 +1335,13 @@ saveCaptured() {
   if (!this.capturedPulses) return;
   const name = this.view.querySelector('#extension-infrared-capturedName').value || 'Button ' + Date.now();
   this.addToCustomRemote(name, this.capturedPulses);
-  this.toast(`Saved "${name}"`, 'success');
+  if(this.learned_code != null){
+    this.allCapturedPulses[name] = this.learned_code;
+    this.allCapturedPulses[name]['name'] = name;
+    //{"name":name, "pulses":this.capturedPulses}
+    this.save("iremote_captured_pulses", this.allCapturedPulses);
+    this.toast(`Saved "${name}"`, 'success');
+  }
 }
 
 replayCaptured() {
@@ -1186,6 +1523,18 @@ clearImported() {
 
 saveImportedRemote() {
   if (this.importedButtons.length === 0) return;
+
+  const remote_name_modal_el = this.view.querySelector('#extension-infrared-remote-name-modal');
+  if(remote_name_modal_el){
+    console.log("calling showModal on remote_name_modal_el: ", remote_name_modal_el);
+    remote_name_modal_el.showModal();
+    const remote_name_input_el = this.view.querySelector('#extension-infrared-remote-name-input');
+    if(remote_name_input_el){
+      remote_name_input_el.value = this.suggested_remote_name;
+    }
+    this.suggested_remote_name = '';
+  }
+  /*
   const name = prompt('Remote name:', 'My Remote');
   if (!name) return;
   this.savedRemotes.push({ name, buttons: this.importedButtons, created: Date.now() });
@@ -1193,6 +1542,7 @@ saveImportedRemote() {
   this.save('iremote_saved',this.savedRemotes);
   this.rendersavedRemotes();
   this.toast(`Saved "${name}" with ${this.importedButtons.length} buttons`, 'success');
+  */
 }
 
 
@@ -1200,33 +1550,58 @@ saveImportedRemote() {
 
 
 initHotelTab() {
-  //this.renderHotelBrandChips();
+  if(this.debug){
+    console.log("infrared debug: initHotelTab: this.show_extra_macros: ", this.show_extra_macros);
+  }
+  
+  //if(this.show_extra_macros){
+   //this.renderHotelBrandChips();
+  //}
   this.renderHotelMacros();
+  if(this.show_extra_macros){
+    this.renderHotelMacros(true);
+  }
 }
 
 renderHotelBrandChips() {
   const brands = [...new Set(this.HOTEL_MACROS.map(m => m.brand))];
   const container = this.view.querySelector('#extension-infrared-hotelBrandChips');
-  let html = `<div class="extension-infrared-hotel-chip ${!this.hotelSelectedBrand ? 'active' : ''}" data-onclick="hotelSelectedBrand=null; this.renderHotelBrandChips(); this.renderHotelMacros();">All</div>`;
+  let html = `<div class="extension-infrared-hotel-chip ${!this.hotelSelectedBrand ? 'active' : ''}" data-onclick="this.renderHotelMacros();">All</div>`; // hotelSelectedBrand=null; this.renderHotelBrandChips(); 
   brands.forEach(b => {
-    html += `<div class="extension-infrared-hotel-chip ${this.hotelSelectedBrand === b ? 'active' : ''}" data-onclick="hotelSelectedBrand='${b}'; this.renderHotelBrandChips(); this.renderHotelMacros();">${b}</div>`;
+    html += `<div class="extension-infrared-hotel-chip ${this.hotelSelectedBrand === b ? 'active' : ''}" data-onclick="this.renderHotelMacros();">${b}</div>`; // hotelSelectedBrand='${b}'; this.renderHotelBrandChips(); 
   });
   container.innerHTML = html;
 }
 
-renderHotelMacros() {
-  const filtered = this.hotelSelectedBrand
+renderHotelMacros(secret=false) {
+  if(this.debug){
+    console.log("infrared debug: renderHotelMacros: secret: ", secret);
+  }
+  let filtered = this.hotelSelectedBrand
     ? this.HOTEL_MACROS.filter(m => m.brand === this.hotelSelectedBrand)
     : this.HOTEL_MACROS;
 
-  filtered.reverse();
-  const container = this.view.querySelector('#extension-infrared-hotelMacroList');
+  let container = this.view.querySelector('#extension-infrared-hotelMacroList');
+
+  if(secret){
+    filtered = this.HOTEL_TV_MACROS;
+    container = this.view.querySelector('#extension-infrared-secretMacrosList');
+  }
+  else{
+    filtered.reverse();
+  }
+  
+  
   container.innerHTML = filtered.map(m => {
     const badgeClass = m.warningLevel === 0 ? 'safe' : m.warningLevel === 1 ? 'caution' : 'danger';
     const badgeLabel = m.warningLevel === 0 ? 'Safe' : m.warningLevel === 1 ? 'Caution' : 'Advanced';
     const stateNote = m.tvState === 'OFF' ? '<div class="extension-infrared-macro-card-note">⚠️ TV must be OFF (standby)</div>' : '';
     const stepsPreview = m.steps.filter(s => s.type !== 'delay').map(s => s.label).join(' → ');
     const desc = m.description.replace(/\n/g, '<br>');
+    let secret_modifier = '';
+    if(secret){
+      secret_modifier = 'Secret';
+    }
     return `<div class="extension-infrared-macro-card">
       <div class="extension-infrared-macro-card-info">
         <div class="extension-infrared-macro-card-header">
@@ -1238,15 +1613,27 @@ renderHotelMacros() {
         <div class="extension-infrared-macro-steps-preview">${stepsPreview}</div>
         ${stateNote}
       </div>
-      <button class="extension-infrared-macro-run-btn" data-onclick="runHotelMacro('${m.id}')" ${this.macroRunning ? 'disabled' : ''}>
+      <button class="extension-infrared-macro-run-btn" data-onclick="run${secret_modifier}HotelMacro('${m.id}')" ${this.macroRunning ? 'disabled' : ''}>
         ▶ Run
       </button>
     </div>`;
+    
+    
   }).join('');
 }
 
-async runHotelMacro(id) {
-  const macro = this.HOTEL_MACROS.find(m => m.id === id);
+runSecretHotelMacro(id){
+  this.runHotelMacro(id,true);
+}
+
+async runHotelMacro(id,secret=false) {
+  let macro = null;
+  if(secret){
+    macro = this.HOTEL_TV_MACROS.find(m => m.id === id);
+  }
+  else{
+    macro = this.HOTEL_MACROS.find(m => m.id === id);
+  }
   if (!macro) return;
   if (!this.isDeviceConnected) { this.toast('No infrared USB dongle detected', 'warning'); return; }
   if (this.macroRunning) { this.toast('Macro already running', 'warning'); return; }
@@ -1488,6 +1875,8 @@ renderIrdb() { // irdbIndex=null
 	  file_item_el.classList.add('extension-infrared-irdb-file');
 	  file_item_el.addEventListener('click', () => {
 		if(this.debug){
+      console.log("infrared debug: file_item_el: ", file_item_el, file_item_el.textContent);
+      this.suggested_remote_name = f.path.split('/')[1] + ' ' + f.path.split('/')[2]; //file_item_el.textContent;
 			console.log("infrared debug: irdb: file details:  \n- f.source: ", f.source, "\n- f.path: ",f.path, "\n- f.fileName: ",f.fileName);
 		}
 		this.loadIrdbFile(f.source,encodeURIComponent(f.path),encodeURIComponent(f.fileName));
@@ -1690,7 +2079,7 @@ rendersavedRemotes() {
     item.className = 'extension-infrared-remote-item';
     const date = remote.created ? new Date(remote.created).toLocaleDateString() : '';
     item.innerHTML = `
-      <div class="extension-infrared-remote-item-info">
+      <div class="extension-infrared-remote-item-info" data-onclick="jumpToRemoteActions('${remote.name}')">
         <div class="extension-infrared-remote-item-name">${remote.name}</div>
         <div class="extension-infrared-remote-item-btns">${remote.buttons.length} buttons${date ? ' · ' + date : ''}</div>
       </div>
@@ -1726,12 +2115,14 @@ openRemote(idx) {
   	this.view.querySelector('#extension-infrared-remoteModal').classList.add('extension-infrared-active');
   }
   else{
-	console.error("did not find index in this.savedRemotes: ", typeof idx, idx, this.savedRemotes);
+	  console.error("did not find index in this.savedRemotes: ", typeof idx, idx, this.savedRemotes);
   }
   
 }
 
 closeModal() { this.view.querySelector('#extension-infrared-remoteModal').classList.remove('extension-infrared-active'); }
+closeDelayModal() { this.view.querySelector('#extension-infrared-delay-modal').close(); }
+closeRemoteNameModal() { this.view.querySelector('#extension-infrared-remote-name-modal').close(); }
 
 deleteRemote(idx) {
   if (!confirm(`Delete "${this.savedRemotes[idx].name}"?`)) return;
@@ -1807,6 +2198,13 @@ addToCustomRemote(name, pulses) {
   container.appendChild(el);
 }
 
+jumpToRemoteActions(remote_name){
+  console.log("in jumpToRemoteActions.  remote_name: ", remote_name);
+  const remote_item = this.view.querySelector('.extension-infrared-actions-remote-control[data-name="' + remote_name + '"]');
+  if(remote_item){
+    remote_item.scrollIntoView({ block:'start', behavior:'smooth' });
+  }
+}
 
 loadBatchPreset(type) {
   this.batchButtons = [...this.BATCH_PRESETS[type]];
@@ -1933,9 +2331,12 @@ batchLearnOne() {
 
 addMacroStep(type) {
   if (type === 'delay') {
-    const ms = parseInt(prompt('Delay in milliseconds:', '250'));
-    if (isNaN(ms) || ms <= 0) return;
-    this.customMacroSteps.push({ type: 'delay', ms });
+    const delay_modal_el = this.view.querySelector('#extension-infrared-delay-modal');
+    delay_modal_el.showModal();
+
+    //const ms = parseInt(prompt('Delay in milliseconds:', '250'));
+    //if (isNaN(ms) || ms <= 0) return;
+    //this.customMacroSteps.push({ type: 'delay', ms });
   } else {
     const proto = this.view.querySelector('#extension-infrared-cmProto').value;
     const cmdKey = this.view.querySelector('#extension-infrared-cmCommand').value;
@@ -1979,19 +2380,42 @@ renderMacroSteps() {
 
 encodeStep(s) {
   switch (s.proto) {
-    case 'samsung32': return samsung32Encode(s.addr, s.cmdCode);
-    case 'nec': return necEncode(s.addr, s.cmdCode);
-    case 'rc5': return rc5Encode(s.addr, s.cmdCode);
-    case 'sony12': return sonyEncode(s.addr, s.cmdCode, 12);
-    default: return necEncode(s.addr, s.cmdCode);
+    case 'samsung32': return this.samsung32Encode(s.addr, s.cmdCode);
+    case 'nec': return this.necEncode(s.addr, s.cmdCode);
+    case 'rc5': return this.rc5Encode(s.addr, s.cmdCode);
+    case 'sony12': return this.sonyEncode(s.addr, s.cmdCode, 12);
+    default: return this.necEncode(s.addr, s.cmdCode);
   }
 }
 
 
-save(id,data,local_only=false){
-	console.log("infrared debud: in save.  id, data: ", id, data);
-	localStorage.setItem(id, JSON.stringify(data));
-	if(local_only == false){
+save(id,data){ // ,local_only=false
+	console.log("infrared debug: in save.  id, data: ", id, data);
+	//localStorage.setItem(id, JSON.stringify(data));
+
+  for(let d = 0; d < data.length; d++){
+    if(typeof data[d]['steps'] != 'undefined'){
+      console.log("save:  item index, steps: ", d, data[d]['steps']);
+      for(let s = 0; s < data[d]['steps'].length; s++){
+        if(typeof data[d]['steps'][s]['type'] == 'string' && typeof data[d]['steps'][s]['encoded_step'] == 'undefined'){
+          console.log("should encode step: ", s, data[d]['steps'][s]);
+          if((data[d]['steps'][s]['type'] == 'ir' || data[d]['steps'][s]['type'] == 'hold') && typeof data[d]['steps'][s]['proto'] == 'string'){
+            data[d]['steps'][s]['encoded_step'] = this.encodeStep(data[d]['steps'][s]);
+            console.log("save:  id, s, encoded_step: ", id, s, data[d]['steps'][s]['encoded_step']);
+          }
+          else{
+            console.log("save:  id, s, other type (probably delay): ", data[d]['steps'][s]['type'], s, "-->" + data[d]['steps'][s]['type'] + "<--");
+          }
+        }
+      }
+    }
+    /*
+    else if(typeof data[d]['pulses'] != 'undefined' && typeof data[d]['encoded_pulses'] == 'undefined'){
+      data[d]['encoded_pulses'] = data[d]['pulses']
+    }
+    */
+  }
+	//if(local_only == false){
 		window.API.postJson(
 			`/extensions/${this.id}/api/ajax`, {
 				'action': 'save',
@@ -2003,12 +2427,22 @@ save(id,data,local_only=false){
 			if(this.debug){
 				console.log("infrared debug: save response: ", body);
 			}
+      if(typeof body.state == 'boolean'){
+        if(body.state == true){
+          this.toast('Saved', 'success');
+        }
+        else{
+          this.toast('Failed to save', 'error');
+        }
+
+      }
 			this.parse_body(body);
+      this.render_previously_recorded_signals_list();
 
 		}).catch((err) => {
 			console.error("Infrared: caught error in save function: ", err);
 		});
-	}
+	//}
 }
 
 saveCustomMacro() {
@@ -2075,6 +2509,16 @@ renderCustomMacros() {
 
 // Load custom macros into this.HOTEL_MACROS on init
 loadCustomMacrosIntoHotel() {
+  /*
+  if(this.show_extra_macros){
+     this.HOTEL_MACROS = JSON.parse(JSON.stringify(this.HOTEL_TV_MACROS));
+  }
+  else{
+    this.HOTEL_MACROS = []
+  }
+  console.warn("loadCustomMacrosIntoHotel: this.HOTEL_MACROS: ", this.HOTEL_MACROS);
+  */
+  this.HOTEL_MACROS = []
   for (const macro of this.customMacros) {
     this.HOTEL_MACROS.push({
       ...macro,

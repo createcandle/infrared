@@ -31,9 +31,12 @@ except:
     print("Import APIHandler and APIResponse from gateway_addon failed. Use at least WebThings Gateway version 0.10")
 
 try:
-    from gateway_addon import Adapter, Device, Database
+    from gateway_addon import Adapter, Device, Property, Database
 except:
     print("Gateway not loaded?!")
+
+from .infrared_adapter import *
+
 
 print = functools.partial(print, flush=True)
 
@@ -72,7 +75,7 @@ try:
         print("[OK] system libusb")
     usb_available = True
 except ImportError:
-    print("ERROR: pip install pyusb libusb-package")
+    print("ERROR: usb lib failed to import.  pip install pyusb libusb-package")
 
 #app = Flask(__name__, static_folder='.')
 #app.config['SECRET_KEY'] = 'iremote'
@@ -100,10 +103,10 @@ class InfraredAPIHandler(APIHandler):
 
     def __init__(self, verbose=False):
         """Initialize the object."""
-        print("INSIDE API HANDLER INIT")
+        #print("INSIDE API HANDLER INIT")
         
         self.addon_name = 'infrared'
-        self.DEBUG = True
+        self.DEBUG = False
             
         #self.things = [] # Holds all the things, updated via the API. Used to display a nicer thing name instead of the technical internal ID.
             
@@ -120,7 +123,7 @@ class InfraredAPIHandler(APIHandler):
                 manifest = json.load(f)
 
             APIHandler.__init__(self, manifest['id'])
-            self.manager_proxy.add_api_handler(self)
+            
             
             
             if self.DEBUG:
@@ -130,6 +133,8 @@ class InfraredAPIHandler(APIHandler):
             print("Failed to init UX extension API handler: " + str(e))
         
 
+        self.show_extra_macros = False
+        
         # LOAD CONFIG
         try:
             self.add_from_config()
@@ -155,6 +160,8 @@ class InfraredAPIHandler(APIHandler):
             if self.DEBUG:
                 print("could not load persistent data (if you just installed the add-on then this is normal)")
 
+        if 'state' not in self.persistent_data:
+            self.persistent_data['state'] = True
 
         if 'remotes' not in self.persistent_data:
             self.persistent_data['remotes'] = {}
@@ -165,6 +172,9 @@ class InfraredAPIHandler(APIHandler):
         
         self.device_type = ''
         self.device_product_name = ''
+        self.ocrustar_variant = ''
+
+        
 
         self.last_transmitted_pulses = None
         self.last_transmitted_frequency = None
@@ -180,6 +190,20 @@ class InfraredAPIHandler(APIHandler):
 
         self.detect_dongle()
 
+        self.adapter = None  
+        try:
+            self.adapter = InfraredAdapter(self,verbose=False)
+            if self.DEBUG:
+                print("debug: ADAPTER created")
+        except Exception as ex:
+            if self.DEBUG:
+                print("Failed to start ADAPTER. Error: " + str(ex))
+        
+
+
+        self.manager_proxy.add_api_handler(self)
+
+
 
     def detect_dongle(self):
         try:
@@ -190,24 +214,41 @@ class InfraredAPIHandler(APIHandler):
                         print(f"  {len(devs)} USB devices:")
                     for d in devs:
                         m = ''
-                        if d['vid']==f'0x{TIQ_VID:04X}' and d['pid']==f'0x{TIQ_PID:04X}': 
-                            m=' ← TIQIAA'
-                            self.device_type = 'TIQIAA'
-                            if 'product' in d:
-                                self.device_product_name = str(d['product'])
-                            self.dongle = d
-                            self.on_connect_tiqiaa()
-                            break
-                        elif d['vid']==f'0x{OCRU_VID:04X}': 
-                            m=' ← OCRUSTAR'
-                            self.device_type = 'OCRUSTAR'
-                            if 'product' in d:
-                                self.device_product_name = str(d['product'])
-                            self.dongle = d
-                            self.on_connect_ocrustar()
-                            break
-                        if self.DEBUG:
-                            print(f"    {d['vid']}:{d['pid']} — {d['product']}{m}")
+                        try:
+                            if self.DEBUG:
+                                print("checking USB device:  d: ", d)
+                            if d['vid']==f'0x{TIQ_VID:04X}' and d['pid']==f'0x{TIQ_PID:04X}': 
+                                m=' ← TIQIAA'
+                                self.device_type = 'tiqiaa'
+                                if self.DEBUG:
+                                    print("spotted Tiqiaa IR dongle")
+                                if 'product' in d:
+                                    self.device_product_name = str(d['product'])
+                                self.dongle = d
+                                self.on_connect_tiqiaa(d['vid'],d['pid'])
+                                time.sleep(0.1)
+                                break
+                            elif d['vid']==f'0x{OCRU_VID:04X}': 
+                                m=' ← OCRUSTAR'
+                                self.device_type = 'ocrustar'
+                                if self.DEBUG:
+                                    print("spotted Ocrustar IR dongle")
+                                if 'product' in d:
+                                    self.device_product_name = str(d['product'])
+                                self.dongle = d
+                                self.on_connect_ocrustar(d['vid'],d['pid'])
+                                time.sleep(0.1)
+                                break
+                            if self.DEBUG:
+                                print(f"    {d['vid']}:{d['pid']} — {d['product']}{m}")
+                        except Exception as ex:
+                            if self.DEBUG:
+                                print("detect_dongle: caught error looping over usb devices: ", ex)
+                            if 'Access denied' in ex:
+                                if self.DEBUG:
+                                    print("\nACCESS DENIED TO A USB DONGLE\n")
+
+
             #if self.DEBUG:
             #    print(f"\n  http://localhost:7890\n{'='*52}")
             #socketio.run(app, host='0.0.0.0', port=7890, debug=False, allow_unsafe_werkzeug=True)
@@ -245,18 +286,35 @@ class InfraredAPIHandler(APIHandler):
             if self.DEBUG:
                 print("-Debugging preference was in config: " + str(self.DEBUG))
 
+        if 'Show extra macros' in config:
+            self.show_extra_macros = bool(config['Show extra macros'])
+            if self.DEBUG:
+                print("-Show extra macros preference was in config: " + str(self.show_extra_macros))
+
+       
         
         
 
 
-    def on_connect_tiqiaa(self):
+    def on_connect_tiqiaa(self, vid=None, pid=None):
         global connected_device, device_type, tiq_cmd_id, tiq_pkt_idx
+        if vid == None or pid == None:
+            if self.DEBUG:
+                print("on_connect_ocrustar:  aborting, vid or vid was nully: ", vid, pid)
+            return False
+        
         if not usb_available: 
-            emit('error', {'msg': 'pyusb not installed'})
-            return
+            if self.DEBUG:
+                print('error', {'msg': 'pyusb not installed'})
+            return False
         with device_lock:
-            #dev = usb.core.find(idVendor=TIQ_VID, idProduct=TIQ_PID, backend=usb_backend)
-            dev = self.dongle
+            dev = get_usb_device(vid,pid)
+            time.sleep(0.1)
+            #dev = self.dongle
+            if dev == None:
+                if self.DEBUG:
+                    print("on_connect_tiqiaa:  error, no dev found with vid,pid: ", vid, pid)
+                return False
 
             try:
                 if dev.is_kernel_driver_active(0): dev.detach_kernel_driver(0)
@@ -266,7 +324,8 @@ class InfraredAPIHandler(APIHandler):
             # Try to claim interface 0
             try: usb.util.claim_interface(self,dev, 0)
             except Exception as e:
-                emit('log', {'msg': f'Interface claim: {e}', 'cls': 'err'})
+                if self.DEBUG:
+                    print('log', {'msg': f'Interface claim: {e}', 'cls': 'err'})
 
             connected_device = dev
             device_type = 'tiqiaa'
@@ -277,40 +336,62 @@ class InfraredAPIHandler(APIHandler):
             except: pass
 
             # Handshake: IDLE then SEND
-            emit('log', {'msg': 'Sending IDLE (L)...', 'cls': 'tx'})
+            if self.DEBUG:
+                print('log', {'msg': 'Sending IDLE (L)...', 'cls': 'tx'})
             ok_idle = tiq_send_cmd(self,dev, ord('L'))
-            emit('log', {'msg': f'IDLE result: {ok_idle}', 'cls': 'info'})
+            if self.DEBUG:
+                print('log', {'msg': f'IDLE result: {ok_idle}', 'cls': 'info'})
 
             if ok_idle:
-                emit('log', {'msg': 'Sending SEND (S)...', 'cls': 'tx'})
+                if self.DEBUG:
+                    print('log', {'msg': 'Sending SEND (S)...', 'cls': 'tx'})
                 ok_send = tiq_send_cmd(self,dev, ord('S'))
-                emit('log', {'msg': f'SEND result: {ok_send}', 'cls': 'info'})
+                if self.DEBUG:
+                    print('log', {'msg': f'SEND result: {ok_send}', 'cls': 'info'})
 
             if ok_idle:
-                emit('log', {'msg': 'Tiqiaa ready', 'cls': 'tx'})
-                emit('connected', {'type': 'tiqiaa', 'variant': None, 'label': 'Tiqiaa (pyusb)'})
+                if self.DEBUG:
+                    print('log', {'msg': 'Tiqiaa ready', 'cls': 'tx'})
+                    print('connected', {'type': 'tiqiaa', 'variant': None, 'label': 'Tiqiaa (pyusb)'})
                 self.dongle_ready = True
+                return True
             else:
                 connected_device = None; device_type = None
                 import platform
                 if platform.system() == 'Windows':
-                    emit('error', {'msg': 'Tiqiaa handshake failed. On Windows you MUST install WinUSB driver via Zadig for BOTH Tiqiaa AND Ocrustar. The Tiqiaa looks like HID but uses bulk transfers internally.'})
-                    emit('log', {'msg': '┌─ FIX: Run Zadig as Admin', 'cls': 'err'})
-                    emit('log', {'msg': '│  Options → List All Devices', 'cls': 'err'})
-                    emit('log', {'msg': '│  Select "Tview" or "Tiqiaa"', 'cls': 'err'})
-                    emit('log', {'msg': '│  Target: WinUSB → Replace Driver', 'cls': 'err'})
-                    emit('log', {'msg': '└─ Then reconnect here', 'cls': 'err'})
+                    if self.DEBUG:
+                        print('error', {'msg': 'Tiqiaa handshake failed. On Windows you MUST install WinUSB driver via Zadig for BOTH Tiqiaa AND Ocrustar. The Tiqiaa looks like HID but uses bulk transfers internally.'})
+                        print('log', {'msg': '┌─ FIX: Run Zadig as Admin', 'cls': 'err'})
+                        print('log', {'msg': '│  Options → List All Devices', 'cls': 'err'})
+                        print('log', {'msg': '│  Select "Tview" or "Tiqiaa"', 'cls': 'err'})
+                        print('log', {'msg': '│  Target: WinUSB → Replace Driver', 'cls': 'err'})
+                        print('log', {'msg': '└─ Then reconnect here', 'cls': 'err'})
                 else:
-                    emit('error', {'msg': 'Tiqiaa handshake failed'})
+                    if self.DEBUG:
+                        print('error', {'msg': 'Tiqiaa handshake failed'})
+        return False
 
 
 
-    def on_connect_ocrustar(self):
+    def on_connect_ocrustar(self, vid=None, pid=None):
         """Mirrors elksmart_v15.py Dev.connect() + Dev.handshake() exactly."""
+        if vid == None or pid == None:
+            if self.DEBUG:
+                print("on_connect_ocrustar:  aborting, vid or pid was nully: ", vid,pid)
+            return False
         global connected_device, device_type, ocrustar_variant, ep_in, ep_out
-        if not usb_available: emit('error', {'msg': 'pyusb not installed'}); return
+        if not usb_available: print('error', {'msg': 'pyusb not installed'}); return
         with device_lock:
-            dev = self.dongle
+            #print("on_connect_ocrustar: usb_backend: ", usb_backend)
+
+            dev = get_usb_device(vid,pid) #usb.core.find(idVendor=TIQ_VID, idProduct=TIQ_PID, backend=usb_backend)
+            time.sleep(.1)
+            if dev == None:
+                if self.DEBUG:
+                    print("on_connect_ocrustar:  error, no dev found with vid,pid: ", vid, pid)
+                return False
+            #dev = self.dongle
+            
 
             try:
                 if dev.is_kernel_driver_active(0): dev.detach_kernel_driver(0)
@@ -318,22 +399,27 @@ class InfraredAPIHandler(APIHandler):
             try: dev.set_configuration()
             except: pass
 
+            #if self.DEBUG:
+            #    print("on_connect_ocrustar: dev before get_active_configuration: ", dev)
+
             devices = dev.get_active_configuration()
             if self.DEBUG:
-                print("devices: ", devices)
+                print("on_connect_ocrustar: dev -> devices: ", type(devices), devices)
             # Endpoint detection: use interface (0,0) — matches working driver exactly
             ei, eo = None, None
             try:
                 for ep in dev.get_active_configuration()[(0,0)]:
                     if self.DEBUG:
-                        print("ep: ", ep)
+                        print("ep: ", type(ep), ep)
                     d = usb.util.endpoint_direction(ep.bEndpointAddress)
                     if self.DEBUG:
                         print("d: ", d)
                     if d == usb.util.ENDPOINT_IN: ei = ep
                     elif d == usb.util.ENDPOINT_OUT: eo = ep
-            except Exception as e:
-                emit('log', {'msg': f'Interface (0,0) failed: {e} — trying all interfaces', 'cls': 'info'})
+            except Exception as ex:
+                if self.DEBUG:
+                    print("Interface (0,0) failed, trying al interfaces. ex: ", ex)
+                #print('log', {'msg': f'Interface (0,0) failed: {e} — trying all interfaces', 'cls': 'info'})
                 # Fallback: scan all interfaces
                 try:
                     for intf in dev.get_active_configuration():
@@ -353,13 +439,14 @@ class InfraredAPIHandler(APIHandler):
                 print("ei: ", ei)
                 print("eo: ", eo)
             if not ei or not eo:
-                emit('error', {'msg': 'No endpoints found. Check Zadig WinUSB driver.'})
-                return
+                if self.DEBUG:
+                    print('error', {'msg': 'No endpoints found. Check Zadig WinUSB driver.'})
+                return False
 
             ep_in = ei; ep_out = eo; connected_device = dev; device_type = 'ocrustar'
-            emit('log', {'msg': f'EP IN=0x{ei.bEndpointAddress:02X} OUT=0x{eo.bEndpointAddress:02X}', 'cls': 'info'})
+            #print('log', {'msg': f'EP IN=0x{ei.bEndpointAddress:02X} OUT=0x{eo.bEndpointAddress:02X}', 'cls': 'info'})
             if self.DEBUG:
-                print("OK, connected to ocrustar")
+                print("\nOK, connected to ocrustar\n")
             
             # ── Handshake: exact copy of elksmart_v15.py Dev.handshake() ──
             # Flush (matches working driver: read 16384 in loop until timeout)
@@ -369,10 +456,11 @@ class InfraredAPIHandler(APIHandler):
 
             ok = False
             for attempt in range(3):  # 3 attempts, matching working driver
-                emit('log', {'msg': f'Handshake {attempt+1}/3 — FC×4', 'cls': 'tx'})
+                #print('log', {'msg': f'Handshake {attempt+1}/3 — FC×4', 'cls': 'tx'})
                 try: eo.write(bytes([0xFC]*4), timeout=500)
                 except Exception as e:
-                    emit('log', {'msg': f'Write error: {e}', 'cls': 'err'}); continue
+                    if self.DEBUG:
+                        print('log', {'msg': f'Write error: {e}', 'cls': 'err'}); continue
 
                 for _ in range(5):  # 5 read attempts per handshake, matching working driver
                     try:
@@ -380,11 +468,13 @@ class InfraredAPIHandler(APIHandler):
                     except: resp = None
                     if resp and len(resp) >= 6:
                         h = ' '.join(f'{b:02X}' for b in resp)
-                        emit('log', {'msg': f'RX ({len(resp)}B): {h}', 'cls': 'rx'})
+                        if self.DEBUG:
+                            print('log', {'msg': f'RX ({len(resp)}B): {h}', 'cls': 'rx'})
                         if resp[0]==0xFC and resp[1]==0xFC and resp[2]==0xFC and resp[3]==0xFC:
                             # Send ACK — mandatory!
                             eo.write(bytes([0xFA]*4), timeout=500)
-                            emit('log', {'msg': 'Sent ACK: FA FA FA FA', 'cls': 'tx'})
+                            if self.DEBUG:
+                                print('log', {'msg': 'Sent ACK: FA FA FA FA', 'cls': 'tx'})
                             time.sleep(0.05)
                             hi, lo = resp[4]&0xFF, resp[5]&0xFF
                             if hi==0x70 and lo==0x01: ocrustar_variant='D552'
@@ -395,59 +485,138 @@ class InfraredAPIHandler(APIHandler):
 
             if not ok:
                 connected_device=None; device_type=None; ep_in=None; ep_out=None
-                emit('error', {'msg': 'Handshake failed. Try: unplug device, wait 3s, replug, then connect again.'})
-                return
-            emit('log', {'msg': f'Handshake OK — {ocrustar_variant}', 'cls': 'tx'})
-            emit('connected', {'type':'ocrustar','variant':ocrustar_variant,'label':f'Ocrustar ({ocrustar_variant})'})
+                if self.DEBUG:
+                    print('error', {'msg': 'Handshake failed. Try: unplug device, wait 3s, replug, then connect again.'})
+                return False
+            if self.DEBUG:
+                print('log', {'msg': f'Handshake OK — {ocrustar_variant}', 'cls': 'tx'})
+                print('connected', {'type':'ocrustar','variant':ocrustar_variant,'label':f'Ocrustar ({ocrustar_variant})'})
             self.dongle_ready = True
+            self.ocrustar_variant = ocrustar_variant
+            return True
+        return False
 
 
 
 
+    def transmit_captured_pulses(self,captured):
+        try:
+            if self.DEBUG:
+                print("in transmit_captured_pulses.  captured: \n", captured)
+            
+            if 'pulses' in captured:
+                
+                self.transmit(captured['pulses'])
+                
+                """
+                duration = 1000
+                fake_type = 'hold'
+                if 'duration_ms' in captured:
+                    duration = captured['duration_ms']
+                    fake_type = 'ir'
+                captured_frequency = 38000
+                if 'freq' in captured and isinstance(captured['freq'],int):
+                    captured_frequency = captured['freq']
+
+                fake_macro = {'steps':[{
+                        'type':fake_type,
+                        'durationMs':duration,
+                        'encoded_step':captured['pulses'],
+                        'freq':captured_frequency}]}
+                if self.DEBUG:
+                    print("transmit_captured_pulses: fake_macro: \n", fake_macro)
+                
+                self.transmit_macro(fake_macro)
+                """
+            else:
+                if self.DEBUG:
+                    print("ERROR: transmit_captured_pulses: no encoded_pulses in captured: ", captured)
+        except Exception as ex:
+            if self.DEBUG:
+                print("\ncaught ERROR in transmit_captured_pulses: ", ex)
+
+    def transmit_macro(self,macro):
+        try:
+            if self.DEBUG:
+                print("in transmit_macro.  macro: \n", macro)
+            stepNum = 0
+            if macro and 'steps' in macro:
+                if self.DEBUG:
+                    print("transmit_macro:  macro steps count: ", len(macro['steps']))
+                for step in macro['steps']:
+                    if 'type' in step:
+                        if str(step['type']) == 'delay' and 'ms' in step and isinstance(step['ms'],int):
+                            if self.DEBUG:
+                                print("transmit_macro:  delay ms: ", step['ms'])
+                            time.sleep(step['ms']/1000)
+                        elif str(step['type']) == 'ir' and 'encoded_step' in step:
+                            stepNum += 1
+                            freq = 38000
+                            if 'freq' in step and isinstance(step['freq'],int):
+                                freq = step['freq']
+                            if self.DEBUG:
+                                print("transmit_macro:  transmitting IR pulses")
+                            self.transmitPulses(step['encoded_step'], freq);
+                        elif str(step['type']) == 'hold' and 'durationMs' in step and isinstance( step['durationMs'],int) and 'encoded_step' in step:
+                            if self.DEBUG:
+                                print("transmit_macro:  transmitting HOLD pulses for ms: ", step['durationMs'])
+                            stepNum += 1
+                            holdEnd = time.time() + (step['durationMs'] / 1000)
+                            # Send repeated IR commands to simulate holding the button
+                            while (time.time() < holdEnd):
+                                self.transmitPulses(step['encoded_step'], freq)
+                                sleep(0.110)
+                        else:
+                            if self.DEBUG:
+                                print("ERROR: transmit_macro:  step fell through")
+        except Exception as ex:
+            print("\ncaught ERROR in transmit_macro: ", ex)
+        
 
 
-
-
-
-    def transmit(self,pulses=[],frequency=38000):
+    def transmit(self,pulses=[],freq=38000):
         """Pulses: signed array. Positive=mark, Negative=space."""
         global connected_device
-        #pulses = data.get('pulses', [])
-        #freq = data.get('freq', 38000)
-        if not self.dongle_ready: emit('error', {'msg': 'No device connected'}); return False
-        with device_lock:
-            try:
-                if device_type == 'tiqiaa':
-                    ir = pulses_to_tiqiaa(pulses)
-                    if not tiq_send_cmd(connected_device, ord('D'), b'\x00' + ir):
-                        tiq_recv(connected_device, 100)
+        if self.persistent_data['state'] == True:
+            #pulses = data.get('pulses', [])
+            #freq = data.get('freq', 38000)
+            if not self.dongle_ready: print('error', {'msg': 'No device connected'}); return False
+            with device_lock:
+                try:
+                    if device_type == 'tiqiaa':
+                        ir = pulses_to_tiqiaa(pulses)
+                        if not tiq_send_cmd(connected_device, ord('D'), b'\x00' + ir):
+                            tiq_recv(connected_device, 100)
+                            tiq_send_cmd(connected_device, ord('L'))
+                            tiq_send_cmd(connected_device, ord('S'))
+                            tiq_send_cmd(connected_device, ord('D'), b'\x00' + ir)
+                        time.sleep(0.05)
                         tiq_send_cmd(connected_device, ord('L'))
-                        tiq_send_cmd(connected_device, ord('S'))
-                        tiq_send_cmd(connected_device, ord('D'), b'\x00' + ir)
-                    time.sleep(0.05)
-                    tiq_send_cmd(connected_device, ord('L'))
-                    emit('log', {'msg': f'TX {len(pulses)} pulses via Tiqiaa', 'cls': 'tx'})
-                    emit('transmit_ok', {'pulses': len(pulses)})
-                    return True
-                elif device_type == 'ocrustar':
-                    ap = [abs(v) for v in pulses]
-                    st = 'd226' if ocrustar_variant=='D226' else 'd552'
-                    frames = encode_ir(freq, ap, st)
-                    emit('log', {'msg': f'TX {len(ap)} vals, {len(frames)} frames ({ocrustar_variant})', 'cls': 'tx'})
-                    for f in frames:
-                        ep_out.write(f, timeout=500)
-                        time.sleep(0.002)
-                    time.sleep(0.05)
-                    try:
-                        r = bytes(ep_in.read(16384, timeout=200))
-                        if r: emit('log', {'msg': f'ACK: {" ".join(f"{b:02X}" for b in r)}', 'cls': 'rx'})
-                    except: pass
-                    emit('transmit_ok', {'pulses': len(pulses)})
-                    return True
-            except Exception as e:
-                if self.DEBUG:
-                    print("caught error in transmit: ", e)
-                emit('error', {'msg': f'TX error: {str(e)}'})
+                        if self.DEBUG:
+                            print('log', {'msg': f'TX {len(pulses)} pulses via Tiqiaa', 'cls': 'tx'})
+                            print('transmit_ok', {'pulses': len(pulses)})
+                        return True
+                    elif device_type == 'ocrustar':
+                        ap = [abs(v) for v in pulses]
+                        st = 'd226' if ocrustar_variant=='D226' else 'd552'
+                        frames = encode_ir(freq, ap, st)
+                        if self.DEBUG:
+                            print('log', {'msg': f'TX {len(ap)} vals, {len(frames)} frames ({ocrustar_variant})', 'cls': 'tx'})
+                        for f in frames:
+                            ep_out.write(f, timeout=500)
+                            time.sleep(0.002)
+                        time.sleep(0.05)
+                        try:
+                            r = bytes(ep_in.read(16384, timeout=200))
+                            if r: print('log', {'msg': f'ACK: {" ".join(f"{b:02X}" for b in r)}', 'cls': 'rx'})
+                        except: pass
+                        if self.DEBUG:
+                            print('transmit_ok', {'pulses': len(pulses)})
+                        return True
+                except Exception as e:
+                    if self.DEBUG:
+                        print("caught error in transmit: ", e)
+                        print('error', {'msg': f'TX error: {str(e)}'})
         return False
 
 
@@ -455,11 +624,12 @@ class InfraredAPIHandler(APIHandler):
     def learn(self,data=None):
         learned_code = None
         timeout = (data or {}).get('timeout', 15)
-        if not self.dongle_ready: emit('error', {'msg': 'No device connected'}); return None
+        if not self.dongle_ready: print('error', {'msg': 'No device connected'}); return None
         with device_lock:
             try:
                 if self.device_type == 'ocrustar':
-                    emit('log', {'msg': f'Learn ({timeout}s) — press remote...', 'cls': 'info'})
+                    if self.DEBUG:
+                        print('log', {'msg': f'Learn ({timeout}s) — press remote...', 'cls': 'info'})
                     # Flush like working driver
                     while True:
                         try: ep_in.read(16384, timeout=10)
@@ -476,7 +646,7 @@ class InfraredAPIHandler(APIHandler):
                         if len(resp)>7 and resp[0]==0xFE and resp[1]==0xFE and resp[2]==0xFE and resp[3]==0xFE:
                             exp = ((resp[4]&0xFF)<<8)|(resp[5]&0xFF)
                             buf = bytearray(resp[6:])
-                            emit('log', {'msg': f'Header: expect {exp}B, got {len(buf)}', 'cls': 'rx'})
+                            print('log', {'msg': f'Header: expect {exp}B, got {len(buf)}', 'cls': 'rx'})
                             if len(buf) >= exp: break
                     ep_out.write(bytes([0xFD]*4), timeout=500)
                     if exp and len(buf) >= exp:
@@ -484,14 +654,16 @@ class InfraredAPIHandler(APIHandler):
                         signed = [t if i%2==0 else -t for i,t in enumerate(timings)]
                         learned_code = {'pulses': signed, 'count': len(signed),
                                             'duration_ms': round(sum(timings)/1000)}
-                        emit('learn_data', {'pulses': signed, 'count': len(signed),
-                                            'duration_ms': round(sum(timings)/1000)})
+                        if self.DEBUG:
+                            print('learn_data', {'pulses': signed, 'count': len(signed), 'duration_ms': round(sum(timings)/1000)})
                         return learned_code
                     else:
-                        emit('learn_timeout', {'msg': 'No signal detected'})
-                else:
+                        if self.DEBUG:
+                            print('learn_timeout', {'msg': 'No signal detected'})
+                elif self.device_type == 'tiqiaa':
                     # ── Tiqiaa learn: IDLE → SEND → RECV → OUTPUT → wait → CANCEL → IDLE ──
-                    emit('log', {'msg': f'Tiqiaa learn ({timeout}s) — press remote...', 'cls': 'info'})
+                    if self.DEBUG:
+                        print('log', {'msg': f'Tiqiaa learn ({timeout}s) — press remote...', 'cls': 'info'})
                     tiq_send_cmd(connected_device, ord('L'))  # IDLE
                     tiq_send_cmd(connected_device, ord('S'))  # SEND
                     tiq_send_cmd(connected_device, ord('R'))  # RECV
@@ -510,18 +682,24 @@ class InfraredAPIHandler(APIHandler):
                                     'count': len(pulses),
                                     'duration_ms': round(sum(abs(p) for p in pulses) / 1000)
                                     }
-                            emit('log', {'msg': f'Captured {len(pulses)} pulses via Tiqiaa', 'cls': 'rx'})
-                            emit('learn_data', {
-                                'pulses': pulses,
-                                'count': len(pulses),
-                                'duration_ms': round(sum(abs(p) for p in pulses) / 1000)
-                            })
+                            if self.DEBUG:
+                                print('log', {'msg': f'Captured {len(pulses)} pulses via Tiqiaa', 'cls': 'rx'})
+                                print('learn_data', {
+                                        'pulses': pulses,
+                                        'count': len(pulses),
+                                        'duration_ms': round(sum(abs(p) for p in pulses) / 1000)
+                                    })
                             return learned_code
-                    emit('learn_timeout', {'msg': 'No signal detected'})
+                    if self.DEBUG:
+                        print('learn_timeout', {'msg': 'No signal detected'})
+
+                else:
+                     if self.DEBUG:
+                        print("learn: fell through: invalid self.device_type: ", self.device_type)
             except Exception as e:
                 if self.DEBUG:
                     print("caught error in on_learn: ", e)
-                emit('error', {'msg': f'Learn error: {str(e)}'})
+                    print('error', {'msg': f'Learn error: {str(e)}'})
 
         return learned_code
 
@@ -545,7 +723,7 @@ class InfraredAPIHandler(APIHandler):
                 
                 action = str(request.body['action'])
                 if self.DEBUG:
-                    print("handling action: ", action)
+                    print("handling request.  action: ", action)
                 
                 backend_ip = str(run_command('ip addr show |grep "inet " |grep -v 127.0.0. |head -1|cut -d" " -f6|cut -d/ -f1')).rstrip()
                 if re.match(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', backend_ip) == None:
@@ -553,7 +731,7 @@ class InfraredAPIHandler(APIHandler):
                         print("ERROR, no own valid ip4 address?  backend_ip: ", backend_ip)
                     backend_ip = None
 
-                # INIT
+                # /INIT
                 if action == 'init' or action == 'detect':
                     
                     if action == 'detect':
@@ -566,12 +744,33 @@ class InfraredAPIHandler(APIHandler):
                                         'action':action,
                                         'device_type':self.device_type,
                                         'device_product_name':self.device_product_name,
+                                        'thing_state':self.persistent_data['state'],
+                                        'dongle_ready':self.dongle_ready,
+                                        'ocrustar_variant':self.ocrustar_variant,
                                         'remotes':self.persistent_data['remotes'],
                                         'backend_ip':backend_ip,
+                                        'show_extra_macros':self.show_extra_macros,
                                         'debug':self.DEBUG
                                         }),
                     )
                 
+                elif action == 'poll':
+                    return APIResponse(
+                      status=200,
+                      content_type='application/json',
+                      content=json.dumps({
+                                        'action':action,
+                                        'device_type':self.device_type,
+                                        'device_product_name':self.device_product_name,
+                                        'thing_state':self.persistent_data['state'],
+                                        'dongle_ready':self.dongle_ready,
+                                        'ocrustar_variant':self.ocrustar_variant,
+                                        'show_extra_macros':self.show_extra_macros,
+                                        'backend_ip':backend_ip,
+                                        'debug':self.DEBUG
+                                        }),
+                    )
+
                 
                 # Transmit IR code
                 elif action == 'transmit':
@@ -597,7 +796,7 @@ class InfraredAPIHandler(APIHandler):
                       content_type='application/json',
                       content=json.dumps({
                                         'state':state,
-                                        'action':action
+                                        'action':action,
                                         }),
                     )
 
@@ -610,7 +809,8 @@ class InfraredAPIHandler(APIHandler):
                         learned_code = self.learn()
                         state = True
                     except Exception as ex:
-                        print("caught error handling request to learn code: ", ex)
+                        if self.DEBUG:
+                            print("caught error handling request to learn code: ", ex)
                     
                     return APIResponse(
                       status=200,
@@ -618,7 +818,7 @@ class InfraredAPIHandler(APIHandler):
                       content=json.dumps({
                                         'state':state,
                                         'action':action,
-                                        'learned_code':learned_code
+                                        'learned_code':learned_code,
                                         }),
                     )
 
@@ -628,22 +828,43 @@ class InfraredAPIHandler(APIHandler):
                     state = False
                     try:
                         if 'id' in request.body and 'data' in request.body and isinstance(request.body['id'],str) and request.body['id'] != '':
-                            self.persistent_data['remotes'][request.body['id']] = request.body['data'];
-                            self.save_persistent_data();
+                            self.persistent_data['remotes'][request.body['id']] = request.body['data']
+                            self.save_persistent_data()
+                            self.adapter.thing.generate_actions()
                             state = True
                     except Exception as ex:
-                        print("caught error saving data: ", ex)
+                        if self.DEBUG:
+                            print("caught error saving data: ", ex)
                     
                     return APIResponse(
                       status=200,
                       content_type='application/json',
                       content=json.dumps({
                                         'state':state,
-                                        'action':action
+                                        'action':action,
                                         }),
                     )
 
+                # Save data
+                elif action == 'enable':
+                    state = False
+                    try:
+                        
+                        self.adapter.thing.enable_state()
+                        state = True
+
+                    except Exception as ex:
+                        if self.DEBUG:
+                            print("caught error setting infrared thing state to True: ", ex)
                     
+                    return APIResponse(
+                      status=200,
+                      content_type='application/json',
+                      content=json.dumps({
+                                        'state':state,
+                                        'action':action,
+                                        }),
+                    )
                 
                 # UNSUPPORTED ACTION
                 else:
@@ -979,6 +1200,17 @@ def list_usb_devices():
     except: pass
     return devices
 
+def get_usb_device(vid,pid):
+    if not usb_available: return None
+    try:
+        for dev in usb.core.find(find_all=True, backend=usb_backend):
+            dev_vid = f'0x{dev.idVendor:04X}'
+            dev_pid = f'0x{dev.idProduct:04X}'
+            if str(dev_vid) == str(vid) and str(dev_pid) == str(pid):
+                return dev
+    except: pass
+    return None
+
 
 #def on_disconnect():
 #    global connected_device, device_type, ocrustar_variant, ep_in, ep_out
@@ -987,6 +1219,6 @@ def list_usb_devices():
 #            try: usb.util.dispose_resources(connected_device)
 #            except: pass
 #        connected_device=None; device_type=None; ocrustar_variant=None; ep_in=None; ep_out=None
-#    emit('disconnected', {})
+#    print('disconnected', {})
 
 

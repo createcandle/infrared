@@ -53,145 +53,181 @@
   <div class="extension-infrared-tabs">
     <button class="extension-infrared-tab extension-infrared-active" data-tab="hotel">🎬 Macros</button>
     <button class="extension-infrared-tab" data-tab="record">🔴 Learn</button>
-    <button class="extension-infrared-tab" data-tab="remote">🎮 Remote</button>
-    <button class="extension-infrared-tab" data-tab="saved">💾 Remotes</button>
+    <button class="extension-infrared-tab" data-tab="remote">🎮 Remotes</button>
     <button class="extension-infrared-tab" data-tab="database">📚 Database</button>
     <button class="extension-infrared-tab" data-tab="import">📂 Import</button>
   </div>
+  <!--<button class="extension-infrared-tab" data-tab="saved">💾 Actions</button>-->
 
-  	<div id="extension-infrared-dongle-container" class="extension-infrared-area"></div>
+  <div id="extension-infrared-dongle-container" class="extension-infrared-area extension-infrared-flex-center"></div>
+
 	<div id="extension-infrared-no-dongle-hint" class="extension-infrared-area">
 		<h2>No USB dongle detected</h2>
-		<p>Plug in a USB Infrared 'blaster' that can both send and receive, such as:</p>
+		<p>Plug in a USB Infrared dongle that can both send and receive, such as:</p>
 		<div class="extension-infrared-flex-column-if-narrow">
-			<p><img src="/extensions/infrared/images/OCRUSTAR.svg"><span>OCRUSTAR</span></p>
-			<p><img src="/extensions/infrared/images/TIQIAA.svg"><span>TIQIAA</span></p>
+			<div><img src="/extensions/infrared/images/ocrustar.svg"><h4>OCRUSTAR/<br>ELKSMART</h4></div>
+			<div><img src="/extensions/infrared/images/tiqiaa.svg"><h4>TIQIAA</h4></div>
 		</div>
 		<div>
 			<button id="extension-infrared-try-detect-dongle-again-button" class="text-button">Detect</button>
 		</div>
 	</div>
 
+  <div id="extension-infrared-disabled-state-hint" class="extension-infrared-area extension-infrared-hidden">Infrared thing state is off, no signals may be transmitted. Click to enable.</div>
+
   <div class="extension-infrared-tab-panel" id="extension-infrared-tab-remote">
-    <div class="extension-infrared-card" style="margin-bottom:16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-      <span class="extension-infrared-card-title" style="margin-bottom:0;">Device Type:</span>
-      <div class="extension-infrared-select-wrap">
-        <select id="extension-infrared-deviceType" data-onchange="switchDeviceType()">
-          <option value="tv">📺 TV (Universal)</option>
-          <option value="ac">❄️ Air Conditioner</option>
-          <option value="fan">🌀 Fan</option>
-          <option value="custom">🔧 Custom Remote</option>
-        </select>
-      </div>
-    </div>
 
-    <div id="extension-infrared-remote-tv" class="extension-infrared-remote-container">
-      <div class="extension-infrared-remote-pad">
-        <div class="extension-infrared-remote-pad-title">Power & Volume</div>
-        <div class="extension-infrared-remote-grid extension-infrared-power" style="grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:16px;">
-          <button class="extension-infrared-ir-btn extension-infrared-power extension-infrared-wide" data-onclick="sendTV('POWER')" style="width:100%">⏻ PWR</button>
-          <button class="extension-infrared-ir-btn extension-infrared-wide" data-onclick="sendTV('SOURCE')" style="width:100%">⎆ SRC</button>
-        </div>
-        <div class="extension-infrared-remote-grid controls" style="margin-bottom:16px;">
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('VOL_UP')">V+</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('MUTE')">🔇</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('CH_UP')">CH+</button>
-          <div></div>
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('VOL_DOWN')">V-</button>
-          <div></div>
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('CH_DOWN')">CH-</button>
-          <div></div>
-        </div>
-        <div class="extension-infrared-remote-pad-title">Navigation</div>
-        <div class="extension-infrared-remote-grid nav">
-          <div></div>
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('UP')">▲</button>
-          <div></div>
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('LEFT')">◀</button>
-          <button class="extension-infrared-ir-btn ok" data-onclick="sendTV('OK')">OK</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('RIGHT')">▶</button>
-          <div></div>
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('DOWN')">▼</button>
-          <div></div>
-        </div>
-        <div style="display:flex; gap:8px; justify-content:center; margin-top:12px;">
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('MENU')" style="width:auto; padding:0 14px; font-size:10px;">MENU</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('HOME')" style="width:auto; padding:0 14px; font-size:10px;">HOME</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('BACK')" style="width:auto; padding:0 14px; font-size:10px;">BACK</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('INFO')" style="width:auto; padding:0 14px; font-size:10px;">INFO</button>
+    <div class="extension-infrared-hidden">
+      <div class="extension-infrared-card" style="margin-bottom:16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <span class="extension-infrared-card-title" style="margin-bottom:0;">Device Type:</span>
+        <div class="extension-infrared-select-wrap">
+          <select id="extension-infrared-deviceType" data-onchange="switchDeviceType()">
+            <option value="tv">📺 TV (Universal)</option>
+            <option value="ac">❄️ Air Conditioner</option>
+            <option value="fan">🌀 Fan</option>
+            <option value="custom">🔧 Custom Remote</option>
+          </select>
         </div>
       </div>
-      <div class="extension-infrared-remote-pad">
-        <div class="extension-infrared-remote-pad-title">Number Pad</div>
-        <div class="extension-infrared-remote-grid numpad" style="margin-bottom:16px;">
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('NUM_1')">1</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('NUM_2')">2</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('NUM_3')">3</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('NUM_4')">4</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('NUM_5')">5</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('NUM_6')">6</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('NUM_7')">7</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('NUM_8')">8</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('NUM_9')">9</button>
-          <div></div>
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('NUM_0')">0</button>
-          <div></div>
-        </div>
-        <div class="extension-infrared-remote-pad-title">Media</div>
-        <div class="extension-infrared-remote-grid media">
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('REWIND')" style="width:48px;height:48px;font-size:10px;">⏪</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('PLAY')" style="width:48px;height:48px;font-size:10px;">▶</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('PAUSE')" style="width:48px;height:48px;font-size:10px;">⏸</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('STOP')" style="width:48px;height:48px;font-size:10px;">⏹</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendTV('FAST_FWD')" style="width:48px;height:48px;font-size:10px;">⏩</button>
-        </div>
-      </div>
-    </div>
 
-    <div id="extension-infrared-remote-ac" style="display:none;">
-      <div class="extension-infrared-card">
-        <div class="extension-infrared-card-title">❄️ Air Conditioner Control</div>
-        <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center; margin-bottom:16px;">
-          <button class="extension-infrared-ir-btn extension-infrared-power" data-onclick="sendAcPower()" style="width:80px;">⏻ PWR</button>
-          <div class="extension-infrared-select-wrap">
-            <select id="extension-infrared-acMode"><option value="cool">❄️ Cool</option><option value="heat">🔥 Heat</option><option value="auto">🔄 Auto</option><option value="dry">💧 Dry</option><option value="fan">💨 Fan Only</option></select>
+      <div id="extension-infrared-remote-tv" class="extension-infrared-remote-container">
+        <div class="extension-infrared-remote-pad">
+          <div class="extension-infrared-remote-pad-title">Power & Volume</div>
+          <div class="extension-infrared-remote-grid extension-infrared-power" style="grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:16px;">
+            <button class="extension-infrared-ir-btn extension-infrared-power extension-infrared-wide" data-onclick="sendTV('POWER')" style="width:100%">⏻ PWR</button>
+            <button class="extension-infrared-ir-btn extension-infrared-wide" data-onclick="sendTV('SOURCE')" style="width:100%">⎆ SRC</button>
           </div>
-          <div class="extension-infrared-select-wrap">
-            <select id="extension-infrared-acFan"><option value="auto">Fan: Auto</option><option value="low">Fan: Low</option><option value="med">Fan: Med</option><option value="high">Fan: High</option></select>
+          <div class="extension-infrared-remote-grid controls" style="margin-bottom:16px;">
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('VOL_UP')">V+</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('MUTE')">🔇</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('CH_UP')">CH+</button>
+            <div></div>
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('VOL_DOWN')">V-</button>
+            <div></div>
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('CH_DOWN')">CH-</button>
+            <div></div>
+          </div>
+          <div class="extension-infrared-remote-pad-title">Navigation</div>
+          <div class="extension-infrared-remote-grid nav">
+            <div></div>
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('UP')">▲</button>
+            <div></div>
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('LEFT')">◀</button>
+            <button class="extension-infrared-ir-btn ok" data-onclick="sendTV('OK')">OK</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('RIGHT')">▶</button>
+            <div></div>
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('DOWN')">▼</button>
+            <div></div>
+          </div>
+          <div style="display:flex; gap:8px; justify-content:center; margin-top:12px;">
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('MENU')" style="width:auto; padding:0 14px; font-size:10px;">MENU</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('HOME')" style="width:auto; padding:0 14px; font-size:10px;">HOME</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('BACK')" style="width:auto; padding:0 14px; font-size:10px;">BACK</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('INFO')" style="width:auto; padding:0 14px; font-size:10px;">INFO</button>
           </div>
         </div>
-        <div style="display:flex; align-items:center; gap:16px;">
-          <button id="extension-infrared-ir-ac-down-btn" class="extension-infrared-ir-btn">-</button>
-          <span style="font-size:48px; font-weight:700; font-family:monospace; min-width:100px; text-align:center;" id="extension-infrared-acTemp">24°C</span>
-          <button id="extension-infrared-ir-ac-up-btn"  class="extension-infrared-ir-btn">+</button>
+        <div class="extension-infrared-remote-pad">
+          <div class="extension-infrared-remote-pad-title">Number Pad</div>
+          <div class="extension-infrared-remote-grid numpad" style="margin-bottom:16px;">
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('NUM_1')">1</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('NUM_2')">2</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('NUM_3')">3</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('NUM_4')">4</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('NUM_5')">5</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('NUM_6')">6</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('NUM_7')">7</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('NUM_8')">8</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('NUM_9')">9</button>
+            <div></div>
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('NUM_0')">0</button>
+            <div></div>
+          </div>
+          <div class="extension-infrared-remote-pad-title">Media</div>
+          <div class="extension-infrared-remote-grid media">
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('REWIND')" style="width:48px;height:48px;font-size:10px;">⏪</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('PLAY')" style="width:48px;height:48px;font-size:10px;">▶</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('PAUSE')" style="width:48px;height:48px;font-size:10px;">⏸</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('STOP')" style="width:48px;height:48px;font-size:10px;">⏹</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendTV('FAST_FWD')" style="width:48px;height:48px;font-size:10px;">⏩</button>
+          </div>
+        </div>
+      </div>
+      
+
+      <div id="extension-infrared-remote-ac" style="display:none;">
+        <div class="extension-infrared-card">
+          <div class="extension-infrared-card-title">❄️ Air Conditioner Control</div>
+          <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center; margin-bottom:16px;">
+            <button class="extension-infrared-ir-btn extension-infrared-power" data-onclick="sendAcPower()" style="width:80px;">⏻ PWR</button>
+            <div class="extension-infrared-select-wrap">
+              <select id="extension-infrared-acMode"><option value="cool">❄️ Cool</option><option value="heat">🔥 Heat</option><option value="auto">🔄 Auto</option><option value="dry">💧 Dry</option><option value="fan">💨 Fan Only</option></select>
+            </div>
+            <div class="extension-infrared-select-wrap">
+              <select id="extension-infrared-acFan"><option value="auto">Fan: Auto</option><option value="low">Fan: Low</option><option value="med">Fan: Med</option><option value="high">Fan: High</option></select>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:16px;">
+            <button id="extension-infrared-ir-ac-down-btn" class="extension-infrared-ir-btn">-</button>
+            <span style="font-size:48px; font-weight:700; font-family:monospace; min-width:100px; text-align:center;" id="extension-infrared-acTemp">24°C</span>
+            <button id="extension-infrared-ir-ac-up-btn"  class="extension-infrared-ir-btn">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="extension-infrared-remote-fan" style="display:none;">
+        <div class="extension-infrared-card">
+          <div class="extension-infrared-card-title">🌀 Fan Control</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="extension-infrared-ir-btn extension-infrared-power" data-onclick="sendFan('POWER')" style="width:80px">⏻ PWR</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendFan('SPEED')" style="width:80px">💨 Speed</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendFan('OSCILLATE')" style="width:80px">↔ Swing</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendFan('TIMER')" style="width:80px">⏲ Timer</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendFan('SPEED_1')" style="width:60px">1</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendFan('SPEED_2')" style="width:60px">2</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendFan('SPEED_3')" style="width:60px">3</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendFan('NATURAL')" style="width:80px">🍃 Nat</button>
+            <button class="extension-infrared-ir-btn" data-onclick="sendFan('SLEEP')" style="width:80px">🌙 Sleep</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="extension-infrared-remote-custom" style="display:none;">
+        <div class="extension-infrared-card">
+          <div class="extension-infrared-card-title">🔧 Custom Remote</div>
+          <p style="color:var(--text-dim); font-size:13px; margin-bottom:16px;">Import a .ir or IRDB .csv file, or record buttons to build a custom remote.</p>
+          <div id="extension-infrared-customButtons" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
         </div>
       </div>
     </div>
 
-    <div id="extension-infrared-remote-fan" style="display:none;">
-      <div class="extension-infrared-card">
-        <div class="extension-infrared-card-title">🌀 Fan Control</div>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button class="extension-infrared-ir-btn extension-infrared-power" data-onclick="sendFan('POWER')" style="width:80px">⏻ PWR</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendFan('SPEED')" style="width:80px">💨 Speed</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendFan('OSCILLATE')" style="width:80px">↔ Swing</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendFan('TIMER')" style="width:80px">⏲ Timer</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendFan('SPEED_1')" style="width:60px">1</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendFan('SPEED_2')" style="width:60px">2</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendFan('SPEED_3')" style="width:60px">3</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendFan('NATURAL')" style="width:80px">🍃 Nat</button>
-          <button class="extension-infrared-ir-btn" data-onclick="sendFan('SLEEP')" style="width:80px">🌙 Sleep</button>
-        </div>
+
+
+
+    <div class="extension-infrared-card" style="margin:16px 0;">
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+        <div class="extension-infrared-card-title" style="margin-bottom:0; flex:1;">💾 Saved Remotes</div>
+        <button class="extension-infrared-btn extension-infrared-btn-sm" data-onclick="exportAllRemotes()" title="Export all as JSON">📤 Export All</button>
+        <label class="extension-infrared-btn extension-infrared-btn-sm extension-infrared-btn-primary" style="cursor:pointer; margin:0;">
+          📥 Import JSON
+          <input type="file" accept=".json" style="display:none;" data-onchange="importRemoteFile(event)">
+        </label>
+      </div>
+      <div id="extension-infrared-savedList" class="extension-infrared-remote-list">
+        <p style="color:var(--text-muted); font-size:13px; text-align:center; padding:24px;">No saved remotes yet.</p>
       </div>
     </div>
 
-    <div id="extension-infrared-remote-custom" style="display:none;">
-      <div class="extension-infrared-card">
-        <div class="extension-infrared-card-title">🔧 Custom Remote</div>
-        <p style="color:var(--text-dim); font-size:13px; margin-bottom:16px;">Import a .ir or IRDB .csv file, or record buttons to build a custom remote.</p>
-        <div id="extension-infrared-customButtons" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
-      </div>
+    <div class="extension-infrared-card" style="margin:16px 0;">
+      <h3>Select which buttons from your remotes should be available on the controller</h3>
+      <div id="extension-infrared-thing-actions-list-container"></div>
     </div>
+
+    <div>
+      <button id="extension-infrared-add-remote-button" class="text-button">Add remote control</button>
+    </div>
+
+
+
   </div>
 
   <div class="extension-infrared-tab-panel extension-infrared-active" id="extension-infrared-tab-hotel">
@@ -279,6 +315,10 @@
       </div>
       <div id="extension-infrared-customMacrosList" style="margin-top:16px;"></div>
     </div>
+
+
+    <div id="extension-infrared-secretMacrosList" class="extension-infrared-card" ></div>
+
   </div>
 
   <div class="extension-infrared-tab-panel" id="extension-infrared-tab-database">
@@ -361,7 +401,7 @@
           </div>
         </div>
       </div>
-      <div class="extension-infrared-card">
+      <div class="extension-infrared-card" style="display:none">
         <div class="extension-infrared-card-title">⚡ Batch Learn Mode</div>
         <p style="color:var(--text-dim); font-size:13px; margin-bottom:12px;">
           Pre-define button names, then learn them one by one. Much faster for capturing a full remote.
@@ -394,33 +434,36 @@
           <p style="font-size:12px; color:var(--text-dim); margin-top:4px;">Point your remote and press the button now...</p>
         </div>
       </div>
+
+      <div class="extension-infrared-card">
+        <div class="extension-infrared-card-title">ℹ️ Recording Tips</div>
+        <div style="color:var(--text-dim); font-size:13px; line-height:1.8;">
+          <p>• Hold your remote <strong>2-5 cm</strong> from the IR blaster</p>
+          <p>• Press the remote button <strong>once, briefly</strong></p>
+          <p>• Avoid fluorescent lighting (can interfere)</p>
+          <!--<p>• Both <span style="color:var(--tiqiaa)">Tiqiaa</span> and <span style="color:var(--ocrustar)">Ocrustar</span> support learn mode</p>-->
+        </div>
+      </div>
+
     </div>
+    
+
     <div class="extension-infrared-card" style="margin-top:16px;">
-      <div class="extension-infrared-card-title">ℹ️ Recording Tips</div>
-      <div style="color:var(--text-dim); font-size:13px; line-height:1.8;">
-        <p>• Hold your remote <strong>2-5 cm</strong> from the IR blaster</p>
-        <p>• Press the remote button <strong>once, briefly</strong></p>
-        <p>• Avoid fluorescent lighting (can interfere)</p>
-        <!--<p>• Both <span style="color:var(--tiqiaa)">Tiqiaa</span> and <span style="color:var(--ocrustar)">Ocrustar</span> support learn mode</p>-->
+      <div class="extension-infrared-card-title">Previously recorded signals</div>
+      <div id="extension-infrared-previously-recorded-signals" style="color:var(--text-dim); font-size:13px; line-height:1.8;">
       </div>
     </div>
   </div>
 
+  
   <div class="extension-infrared-tab-panel" id="extension-infrared-tab-saved">
-    <div class="extension-infrared-card">
-      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
-        <div class="extension-infrared-card-title" style="margin-bottom:0; flex:1;">💾 Saved Remotes</div>
-        <button class="extension-infrared-btn extension-infrared-btn-sm" data-onclick="exportAllRemotes()" title="Export all as JSON">📤 Export All</button>
-        <label class="extension-infrared-btn extension-infrared-btn-sm extension-infrared-btn-primary" style="cursor:pointer; margin:0;">
-          📥 Import JSON
-          <input type="file" accept=".json" style="display:none;" data-onchange="importRemoteFile(event)">
-        </label>
-      </div>
-      <div id="extension-infrared-savedList" class="extension-infrared-remote-list">
-        <p style="color:var(--text-muted); font-size:13px; text-align:center; padding:24px;">No saved remotes yet.</p>
-      </div>
-    </div>
+    <h3>Select which buttons from your remotes should be available on the controller</h3>
+    <div id="extension-infrared-thing-actions-list-container"></div>
+
+    
+
   </div>
+  
 
   <div class="extension-infrared-tab-panel" id="extension-infrared-tab-log">
     <div class="extension-infrared-card">
@@ -437,7 +480,7 @@
 
 </div>
 
-<div class="extension-infrared-modal-overlay" id="extension-infrared-remoteModal">
+<div id="extension-infrared-remoteModal" class="extension-infrared-modal-overlay">
   <div class="extension-infrared-modal">
     <div class="extension-infrared-modal-header">
       <h2 id="extension-infrared-modalTitle">Remote</h2>
@@ -446,6 +489,28 @@
     <div id="extension-infrared-modalButtons" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
   </div>
 </div>
+
+<dialog id="extension-infrared-delay-modal">
+  <div class="extension-infrared-modalX">
+    <div class="extension-infrared-modal-header">
+      <h2 id="extension-infrared-modalTitle">Delay (in milliseconds)</h2>
+    </div>
+    <input id="extension-infrared-delay-input" type="integer">
+    <button class="extension-infrared-modal-close" data-onclick="closeDelayModal()">✕</button>
+    <button type="button" id="extension-infrared-save-delay-button" class="text-button extension-infrared-save-button">Add delay</button>
+  </div>
+</dialog>
+
+<dialog id="extension-infrared-remote-name-modal">
+  <div class="extension-infrared-modalX">
+    <div class="extension-infrared-modal-header">
+      <h2 id="extension-infrared-modalTitle">Delay (in milliseconds)</h2>
+    </div>
+    <input id="extension-infrared-remote-name-input" type="text">
+    <button class="extension-infrared-modal-close" data-onclick="closeRemoteNameModal()">✕</button>
+    <button type="button" id="extension-infrared-save-remote-name-button" class="text-button extension-infrared-save-button">Save</button>
+  </div>
+</dialog>
 
 <div class="extension-infrared-footer">
   <p>USB IR Blaster Interface by <a href="https://github.com/deadboy18" target="_blank">deadboy18</a></p>
