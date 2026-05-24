@@ -154,7 +154,8 @@ class InfraredAPIHandler(APIHandler):
             with open(self.persistence_file_path) as f:
                 self.persistent_data = json.load(f)
                 if self.DEBUG:
-                    print('self.persistent_data loaded from file: ' + str(self.persistent_data))
+                    #print('self.persistent_data loaded from file: ' + str(self.persistent_data))
+                    print('self.persistent_data loaded from file')
                 
         except:
             if self.DEBUG:
@@ -830,7 +831,10 @@ class InfraredAPIHandler(APIHandler):
                         if 'id' in request.body and 'data' in request.body and isinstance(request.body['id'],str) and request.body['id'] != '':
                             self.persistent_data['remotes'][request.body['id']] = request.body['data']
                             self.save_persistent_data()
-                            self.adapter.thing.generate_actions()
+                            if request.body['id'] != 'thing_actions':
+                                self.adapter.thing.generate_actions()
+                            else:
+                                self.adapter.generate_remote_thing_actions()
                             state = True
                     except Exception as ex:
                         if self.DEBUG:

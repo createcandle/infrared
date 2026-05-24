@@ -906,8 +906,12 @@
     render_thing_actions_list(){
 
       function sanitize(text){
-        return text.replace(/[^a-zA-Z0-9]/g, '');
+        text = text.replaceAll(' ','_');
+        text = text.replaceAll('-','_');
+        return text.replace(/[^a-zA-Z0-9\_\+\-\>\<]/g, '');
       }
+
+      let all_sanitized_remote_names = [];
 
       const actions_list_container_el = this.view.querySelector('#extension-infrared-thing-actions-list-container');
       if(actions_list_container_el){
@@ -915,13 +919,16 @@
         
         for(let r = 0; r < this.savedRemotes.length; r++){
           
-        
           //for (const [name, details] of Object.entries(this.savedRemotes)) {
           
           if(typeof this.savedRemotes[r].name == 'string' && this.savedRemotes[r].name.length){
             
             const sanitized_remote_name = sanitize(this.savedRemotes[r].name);
             if(sanitized_remote_name){
+
+              if(all_sanitized_remote_names.indexOf(sanitized_remote_name) == -1){
+                all_sanitized_remote_names.push(sanitized_remote_name);
+              }
 
               const remote_control_el = document.createElement('div');
               remote_control_el.classList.add('extension-infrared-actions-remote-control');
@@ -934,6 +941,7 @@
               const buttons_container_el = document.createElement('div');
               buttons_container_el.classList.add('extension-infrared-actions-remote-control-button-container');
 
+              
               for(let b = 0; b < this.savedRemotes[r]['buttons'].length; b++){
                 const remote_control_button_el = document.createElement('div');
                 remote_control_button_el.classList.add('extension-infrared-actions-remote-control-button');
@@ -943,7 +951,7 @@
                 remote_control_button_el.appendChild(button_name_el);
 
                 const sanitized_button_name = sanitize(this.savedRemotes[r]['buttons'][b].name);
-
+                
                 // TODO: ID could still have collisions
                 const button_id = sanitized_remote_name + '---x---' + sanitized_button_name;
                 console.log("button_id: ", button_id)
@@ -951,22 +959,47 @@
                 button_checkbox_el.setAttribute('type','checkbox');
                 button_checkbox_el.setAttribute('id', button_id);
 
-                if(typeof this.thing_actions[sanitized_remote_name] != 'undefined' && typeof this.thing_actions[sanitized_remote_name][sanitized_button_name] != 'undefined' && typeof this.thing_actions[sanitized_remote_name][sanitized_button_name]['enabled'] == 'boolean'){
-                  button_checkbox_el.checked = this.thing_actions[sanitized_remote_name][sanitized_button_name]['enabled'];
+                if(typeof this.thing_actions[sanitized_remote_name] != 'undefined' && typeof this.thing_actions[sanitized_remote_name]['buttons'] != 'undefined' && typeof this.thing_actions[sanitized_remote_name]['buttons'][sanitized_button_name] != 'undefined' && typeof this.thing_actions[sanitized_remote_name]['buttons'][sanitized_button_name]['enabled'] == 'boolean'){
+                  button_checkbox_el.checked = this.thing_actions[sanitized_remote_name]['buttons'][sanitized_button_name]['enabled'];
                 }
                 button_checkbox_el.addEventListener('change', () => {
                   if(typeof this.thing_actions[sanitized_remote_name] == 'undefined'){
-                    this.thing_actions[sanitized_remote_name] = {};
+                    this.thing_actions[sanitized_remote_name] = {"name": this.savedRemotes[r].name, "sanitized_name":sanitized_remote_name, "buttons":{}};
                   }
-                  if(typeof this.thing_actions[sanitized_remote_name][sanitized_button_name] == 'undefined'){
-                    this.thing_actions[sanitized_remote_name][sanitized_button_name] = {};
+
+                  // TODO: these next three checks were useful during development to fix missing attributes, but can be removed for production
+                  if(typeof this.thing_actions[sanitized_remote_name]['name'] != 'string'){
+                    this.thing_actions[sanitized_remote_name]['name'] = this.savedRemotes[r].name;
                   }
-                  this.thing_actions[sanitized_remote_name][sanitized_button_name]['enabled'] = button_checkbox_el.checked;
+                  if(typeof this.thing_actions[sanitized_remote_name]['sanitized_name'] != 'string'){
+                    this.thing_actions[sanitized_remote_name]['sanitized_name'] = sanitized_remote_name;
+                  }
+                  if(typeof this.thing_actions[sanitized_remote_name]['buttons'] == 'undefined'){
+                    this.thing_actions[sanitized_remote_name]['buttons'] = {};
+                  }
 
-                  console.warn("changed: ", this.savedRemotes[r]['buttons'][b]);
-                  Object.assign(this.thing_actions[sanitized_remote_name][sanitized_button_name], this.savedRemotes[r]['buttons'][b]);
+                  if(typeof this.thing_actions[sanitized_remote_name]['buttons'][sanitized_button_name] == 'undefined'){
+                    this.thing_actions[sanitized_remote_name]['buttons'][sanitized_button_name] = {"name":this.savedRemotes[r]['buttons'][b]['name'],"sanitized_name":sanitized_button_name};
+                  }
 
-                  console.log("this.thing_actions for this remote is now: ", sanitized_remote_name, this.thing_actions[sanitized_remote_name]);
+                  // TODO: these next two checks were useful during development to fix missing attributes, but can be removed for production
+                  if(typeof this.thing_actions[sanitized_remote_name]['buttons'][sanitized_button_name]['name'] != 'string'){
+                    this.thing_actions[sanitized_remote_name]['buttons'][sanitized_button_name]['name'] = this.savedRemotes[r]['buttons'][b]['name'];
+                  }
+                  if(typeof this.thing_actions[sanitized_remote_name]['buttons'][sanitized_button_name]['sanitized_name'] != 'string'){
+                    this.thing_actions[sanitized_remote_name]['buttons'][sanitized_button_name]['sanitized_name'] = sanitized_button_name;
+                  }
+
+                  this.thing_actions[sanitized_remote_name]['buttons'][sanitized_button_name]['enabled'] = button_checkbox_el.checked;
+
+                  if(this.debug){
+                    console.warn("infrared debug: render_thing_actions_list: checkbox changed. button data: ", this.savedRemotes[r]['buttons'][b]);
+                  }
+                  Object.assign(this.thing_actions[sanitized_remote_name]['buttons'][sanitized_button_name], this.savedRemotes[r]['buttons'][b]);
+
+                  if(this.debug){
+                    console.log("infrared debug: this.thing_actions for this remote is now: ", sanitized_remote_name, this.thing_actions[sanitized_remote_name]);
+                  }
                   this.save('thing_actions', this.thing_actions);
                 })
 
@@ -986,6 +1019,27 @@
           }
           
         }
+
+        if(this.debug){
+          console.log("infrared debug: render_thing_actions_list: all_sanitized_remote_names: ", all_sanitized_remote_names);
+        }
+
+        // Prune thing_actions for remotes that no longer exist
+        let pruned = false;
+        let thing_action_keys = Object.keys(this.thing_actions);
+        for(let tk = 0; tk < thing_action_keys.length; tk++){
+          if(all_sanitized_remote_names.indexOf( thing_action_keys[tk] ) == -1){
+            if(this.debug){
+              console.log("infrared debug: render_thing_actions_list: removing thing_actions for remote that no longer exists: " + thing_action_keys[tk]);
+            }
+            delete this.thing_actions[ thing_action_keys[tk] ];
+            pruned = true;
+          }
+        }
+        if(pruned){
+          this.save('thing_actions', this.thing_actions);
+        }
+
       }
     }
         
@@ -1737,6 +1791,10 @@ async loadirdbIndex(force) {
     this.renderIrdbError('No data from either source. Check internet or GitHub rate limits.');
     return;
   }
+  const irdb_loading_el = this.view.querySelector('.extension-infrared-irdb-loading');
+  if(irdb_loading_el){
+    irdb_loading_el.style.display = 'none';
+  }
 
   const merged = {};
 
@@ -1814,13 +1872,19 @@ clearrenderIrdb(){
 
 
 renderIrdb() { // irdbIndex=null
-  console.log("in renderIrdb");
+  if(this.debug){
+    console.log("infrared debug: in renderIrdb");
+  }
+  
   if (!this.irdbIndex) return;
   const { category, brand, query } = this.irdbNav;
   const container = this.view.querySelector('#extension-infrared-irdbBrowser');
 
-  console.log("renderIrdb: this.irdbNav: ", this.irdbNav);
-  console.log("renderIrdb: this.irdbIndex.categories: ", this.irdbIndex.categories);
+  container.innerHTML = '';
+  if(this.debug){
+    console.log("infrared debug: renderIrdb: this.irdbNav: ", this.irdbNav);
+    console.log("infrared debug: renderIrdb: this.irdbIndex.categories: ", this.irdbIndex.categories);
+  }
 
   // Title
   let title = 'IR Database';
@@ -1831,27 +1895,45 @@ renderIrdb() { // irdbIndex=null
   const backAction = brand ? `this.irdbNav.brand=null; renderIrdb()`
     : category ? `this.irdbNav.category=null; this.irdbNav.query=''; renderIrdb()`
     : null;
-
-  
-  let html = `<div class="extension-infrared-irdb-topbar">`;
-  if (backAction) {
-    html += `<button id="extension-infrared-irdb-back" class="extension-infrared-irdb-back">←</button>`;
+  if(this.debug){
+    console.log("infrared debug: backAction: ", backAction);
   }
-  html += `<div class="extension-infrared-irdb-title">${title}</div>`;
-  html += `<span class="extension-infrared-irdb-count">${this.irdbIndex.totalFiles} codes</span>`;
-  html += `</div>`;
+
+  const top_bar_el = document.createElement('div');
+  top_bar_el.classList.add('extension-infrared-irdb-topbar');
+  if(brand || category){
+    const back_button_el = document.createElement('button');
+    back_button_el.classList.add('extension-infrared-irdb-back');
+    back_button_el.setAttribute('id','extension-infrared-irdb-back');
+    back_button_el.textContent = '←';
+    back_button_el.addEventListener('click', () => {
+      if(brand){
+        this.irdbNav.brand=null; 
+        this.renderIrdb();
+      }else if(category){
+        this.irdbNav.category=null; 
+        this.irdbNav.query=''; 
+        this.renderIrdb();
+      }
+    })
+    top_bar_el.appendChild(back_button_el);
+  }
+  const info_el = document.createElement('div');
+  info_el.innerHTML = `<div class="extension-infrared-irdb-title">${title}</div><span class="extension-infrared-irdb-count">${this.irdbIndex.totalFiles} codes</span>`;
+  top_bar_el.appendChild(info_el);
+  container.appendChild(top_bar_el);
 
   // Search bar (not in file view)
   if (!brand) {
+    const search_bar_el = document.createElement('div');
+    search_bar_el.classList.add('extension-infrared-irdb-searchbar');
     const placeholder = category ? `Search ${this.getCatInfo(category).label} brands...` : 'Search all brands...';
-    html += `<div class="extension-infrared-irdb-searchbar">
-      <span class="extension-infrared-search-icon">🔍</span>
+    search_bar_el.innerHTML = `<span class="extension-infrared-search-icon">🔍</span>
       <input id="extension-infrared-irdbSearchInput" placeholder="${placeholder}" value="${query}">
-	  ${query ? '<button class="extension-infrared-clear-btn" data-onclick="clearrenderIrdb()">✕</button>' : ''}
-    </div>`;
-	// 
+	  ${query ? '<button class="extension-infrared-clear-btn" data-onclick="clearrenderIrdb()">✕</button>' : ''}`;
+    container.appendChild(search_bar_el);
   }
-  container.innerHTML = html;
+  
 
   let irdb_list_el = document.createElement('div');
   irdb_list_el.classList.add('extension-infrared-irdb-list');
@@ -1863,9 +1945,9 @@ renderIrdb() { // irdbIndex=null
   if (brand && category) {
     // Files view
     const files = this.irdbIndex.categories[category]?.brands[brand] || [];
-	if(this.debug){
-		console.log("infrared debug: files: ", files);
-	}
+	  if(this.debug){
+		  console.log("infrared debug: files: ", files);
+	  }
     files_html = `<div class="extension-infrared-irdb-hint">ℹ️ Tap to download and add as buttons you can test and save</div>`;
     files.forEach(f => {
       const srcBadge = f.source === 'flipper'
@@ -1876,9 +1958,52 @@ renderIrdb() { // irdbIndex=null
 	  file_item_el.addEventListener('click', () => {
 		if(this.debug){
       console.log("infrared debug: file_item_el: ", file_item_el, file_item_el.textContent);
-      this.suggested_remote_name = f.path.split('/')[1] + ' ' + f.path.split('/')[2]; //file_item_el.textContent;
 			console.log("infrared debug: irdb: file details:  \n- f.source: ", f.source, "\n- f.path: ",f.path, "\n- f.fileName: ",f.fileName);
 		}
+
+    if(f.path.startsWith('.')){
+      this.suggested_remote_name = '';
+    }
+    else if(f.path.startsWith('codes/')){
+      this.suggested_remote_name = f.path.split('/')[1] + ' ' + f.path.split('/')[2]; //file_item_el.textContent;
+    }
+    else if(f.path.startsWith('_Converted_/')){
+      const parts = f.path.split('/');
+      if(parts.length > 3 && parts[4].toLowerCase() != 'unknown'){
+        if(parts[4].indexOf(parts[3]) != -1 || parts[3].toLowerCase() == 'unknown'){
+          this.suggested_remote_name = parts[4].replaceAll('.ir','');
+        }
+        else{
+          this.suggested_remote_name = parts[3] + ' ' + parts[4].replaceAll('.ir','');
+        }
+        
+      }
+      else if(parts.length > 2){
+        this.suggested_remote_name = parts[3]
+      }
+    }
+    else if(f.path.endsWith('.ir') && f.path.indexOf('/') != -1){
+      const parts = f.path.split('/');
+      let code_name = parts[parts.length - 1];
+      if(code_name.endsWith('.ir')){
+        code_name = code_name.slice(0, -3);
+      }
+      console.log("db: code_name: ", code_name);
+    }
+    else if(f.path.indexOf('/') != -1){
+      const parts = f.path.split('/');
+      this.suggested_remote_name = parts[parts.length - 1];
+    }
+    else{
+      this.suggested_remote_name = '';
+    }
+  
+    this.suggested_remote_name = this.suggested_remote_name.replaceAll('_',' ');
+    if(this.debug){
+      console.log("this.suggested_remote_name is now: ", this.suggested_remote_name);
+    }
+  
+    
 		this.loadIrdbFile(f.source,encodeURIComponent(f.path),encodeURIComponent(f.fileName));
 		//this.loadIrdbFile(f.source,f.path,f.fileName);
 	  })

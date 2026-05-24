@@ -51,6 +51,10 @@
 @media (max-width: 640px) { .extension-infrared-flex-column-if-narrow { flex-direction: column; } }
 
 
+#extension-infrared-content h3{
+  font-size:2rem;
+}
+
 .extension-infrared-area{
 	margin:2rem 0;
 	background-color:rgba(0,0,0,.15);
@@ -365,7 +369,9 @@ body {
 .extension-infrared-dropzone-sub { color: var(--text-muted); font-size: 12px; margin-top: 6px; }
 
 .extension-infrared-irdb-browser { display: flex; flex-direction: column; min-height: 400px; }
+.extension-infrared-irdb-topbar > div,
 .extension-infrared-irdb-topbar { display: flex; align-items: center; gap: 8px; padding: 8px 4px; }
+.extension-infrared-irdb-topbar > div{width:100%;}
 .extension-infrared-irdb-back {
   background: none; border: none; color: var(--text); font-size: 20px; cursor: pointer;
   width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
@@ -711,6 +717,7 @@ dialog{
   background-color:#bbb;
   border-radius:2rem;
 }
+@media (min-width: 640px) { dialog{min-width:400px;} }
 
 dialog:not(:open){
   display:none;
