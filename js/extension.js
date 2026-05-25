@@ -636,6 +636,9 @@
       if(retry_connecting_to_dongle_button_el){
         retry_connecting_to_dongle_button_el.addEventListener('click', () => {
           retry_connecting_to_dongle_button_el.classList.add('extension-infrared-faded');
+           setTimeout(() => {
+            this.do_poll();
+          },4000);
           setTimeout(() => {
             retry_connecting_to_dongle_button_el.classList.remove('extension-infrared-faded');
           },5000);
@@ -2625,7 +2628,7 @@ renderCustomMacros() {
     return;
   }
   container.innerHTML = '<div style="font-size:13px; font-weight:600; margin-bottom:8px; color:var(--text-dim);">Your Custom Macros</div>' +
-    this.customMacros.map(m => `<div style="display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--bg-input); border-radius:8px; margin-bottom:4px;">
+    this.customMacros.map(m => `<div class="extension-infrared-macro-card" style="display:flex; align-items:center; gap:8px;">
       <span style="font-size:13px; font-weight:500; flex:1;">${m.name} <span style="color:var(--accent); font-size:11px;">${m.brand}</span></span>
       <span style="font-size:11px; color:var(--text-dim);">${m.description}</span>
       <button class="extension-infrared-btn extension-infrared-btn-sm extension-infrared-btn-danger" data-onclick="deleteCustomMacro('${m.id}')" style="padding:2px 8px;">🗑</button>

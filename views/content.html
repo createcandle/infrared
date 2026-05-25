@@ -64,7 +64,7 @@
 	<div id="extension-infrared-no-dongle-hint" class="extension-infrared-area">
 		<h2>No USB dongle detected</h2>
 		<p>Plug in a USB Infrared dongle that can both send and receive, such as:</p>
-		<div class="extension-infrared-flex-column-if-narrow">
+		<div class="extension-infrared-flex-center" style="margin-top: 2rem; justify-content: space-evenly;">
 			<div><img src="/extensions/infrared/images/ocrustar.svg"><h4>OCRUSTAR/<br>ELKSMART</h4></div>
 			<div><img src="/extensions/infrared/images/tiqiaa.svg"><h4>TIQIAA</h4></div>
 		</div>
@@ -194,7 +194,7 @@
       <div id="extension-infrared-remote-custom" style="display:none;">
         <div class="extension-infrared-card">
           <div class="extension-infrared-card-title">🔧 Custom Remote</div>
-          <p style="color:var(--text-dim); font-size:13px; margin-bottom:16px;">Import a .ir or IRDB .csv file, or record buttons to build a custom remote.</p>
+          <p style="color:var(--extension-infrared-text-dim); font-size:13px; margin-bottom:16px;">Import a .ir or IRDB .csv file, or record buttons to build a custom remote.</p>
           <div id="extension-infrared-customButtons" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
         </div>
       </div>
@@ -213,12 +213,12 @@
         </label>
       </div>
       <div id="extension-infrared-savedList" class="extension-infrared-remote-list">
-        <p style="color:var(--text-muted); font-size:13px; text-align:center; padding:24px;">No saved remotes yet.</p>
+        <p style="color:var(--extension-infrared-text-muted); font-size:13px; text-align:center; padding:24px;">No saved remotes yet.</p>
       </div>
     </div>
 
     <div class="extension-infrared-card" style="margin:16px 0;">
-      <h3>Select which buttons from your remotes should be available on the controller</h3>
+      <p>Select which buttons from your remotes should be available on the controller. Each remote will become a separate thing.</p>
       <div id="extension-infrared-thing-actions-list-container"></div>
     </div>
 
@@ -235,7 +235,7 @@
 	<div class="extension-infrared-card">
 		<!--
       <div class="extension-infrared-card-title">🏨 Hotel / Hospitality TV Toolkit</div>
-      <p style="color:var(--text-dim); font-size:13px; margin-bottom:12px;">
+      <p style="color:var(--extension-infrared-text-dim); font-size:13px; margin-bottom:12px;">
         Access hidden hotel menus, service modes, and installer settings on hospitality TVs.
         These macros send timed button sequences via IR — just like a physical remote.
       </p>
@@ -244,12 +244,12 @@
 	  -->
       <div id="extension-infrared-macroProgress" style="display:none; margin-bottom:16px;">
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
-          <div style="flex:1; height:4px; background:var(--border); border-radius:2px; overflow:hidden;">
-            <div id="extension-infrared-macroProgressBar" style="height:100%; background:var(--orange); transition:width 0.2s; width:0%;"></div>
+          <div style="flex:1; height:4px; background:var(--extension-infrared-border); border-radius:2px; overflow:hidden;">
+            <div id="extension-infrared-macroProgressBar" style="height:100%; background:var(--extension-infrared-orange); transition:width 0.2s; width:0%;"></div>
           </div>
-          <span id="extension-infrared-macroProgressText" style="font-size:12px; color:var(--text-dim); min-width:60px; text-align:right;"></span>
+          <span id="extension-infrared-macroProgressText" style="font-size:12px; color:var(--extension-infrared-text-dim); min-width:60px; text-align:right;"></span>
         </div>
-        <div id="extension-infrared-macroStepLabel" style="font-size:12px; color:var(--orange);"></div>
+        <div id="extension-infrared-macroStepLabel" style="font-size:12px; color:var(--extension-infrared-orange);"></div>
       </div>
 
       <div id="extension-infrared-hotelMacroList" style="display:flex; flex-direction:column; gap:10px;"></div>
@@ -258,7 +258,7 @@
 
     <div class="extension-infrared-card" style="margin-top:16px;">
       <div class="extension-infrared-card-title">🎬 Custom Macro Builder</div>
-      <p style="color:var(--text-dim); font-size:13px; margin-bottom:12px;">
+      <p style="color:var(--extension-infrared-text-dim); font-size:13px; margin-bottom:12px;">
         Create your own button sequences. Add IR commands and delays, name the macro, and save it.
       </p>
       <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
@@ -275,7 +275,7 @@
       </div>
       <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; align-items:end;">
         <div>
-          <label style="font-size:11px; color:var(--text-dim); display:block; margin-bottom:4px;">Protocol</label>
+          <label style="font-size:11px; color:var(--extension-infrared-text-dim); display:block; margin-bottom:4px;">Protocol</label>
           <div class="extension-infrared-select-wrap">
             <select id="extension-infrared-cmProto">
               <option value="samsung32">Samsung32</option>
@@ -286,7 +286,7 @@
           </div>
         </div>
         <div>
-          <label style="font-size:11px; color:var(--text-dim); display:block; margin-bottom:4px;">Command</label>
+          <label style="font-size:11px; color:var(--extension-infrared-text-dim); display:block; margin-bottom:4px;">Command</label>
           <div class="extension-infrared-select-wrap">
             <select id="extension-infrared-cmCommand">
               <option value="power">Power</option><option value="mute">Mute</option>
@@ -333,10 +333,10 @@
     </div>
     <div class="extension-infrared-card">
       <div class="extension-infrared-card-title">Built-in Protocol Codes</div>
-      <p style="color:var(--text-dim); font-size:13px; margin-bottom:16px;">Quick-send specific protocol commands.</p>
+      <p style="color:var(--extension-infrared-text-dim); font-size:13px; margin-bottom:16px;">Quick-send specific protocol commands.</p>
       <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:end;">
         <div>
-          <label style="font-size:11px; color:var(--text-dim); display:block; margin-bottom:4px;">Protocol</label>
+          <label style="font-size:11px; color:var(--extension-infrared-text-dim); display:block; margin-bottom:4px;">Protocol</label>
           <div class="extension-infrared-select-wrap">
             <select id="extension-infrared-protoSelect">
               <option value="nec">NEC</option><option value="nec_ext">NEC Extended</option>
@@ -346,11 +346,11 @@
           </div>
         </div>
         <div>
-          <label style="font-size:11px; color:var(--text-dim); display:block; margin-bottom:4px;">Address (hex)</label>
+          <label style="font-size:11px; color:var(--extension-infrared-text-dim); display:block; margin-bottom:4px;">Address (hex)</label>
           <input class="extension-infrared-db-search" id="extension-infrared-protoAddr" placeholder="0x07" style="width:100px; margin-bottom:0;">
         </div>
         <div>
-          <label style="font-size:11px; color:var(--text-dim); display:block; margin-bottom:4px;">Command (hex)</label>
+          <label style="font-size:11px; color:var(--extension-infrared-text-dim); display:block; margin-bottom:4px;">Command (hex)</label>
           <input class="extension-infrared-db-search" id="extension-infrared-protoCmd" placeholder="0x02" style="width:100px; margin-bottom:0;">
         </div>
         <button class="extension-infrared-btn extension-infrared-btn-primary" data-onclick="sendProtocolCode()">📡 Send</button>
@@ -384,7 +384,7 @@
     <div class="extension-infrared-grid-2">
       <div class="extension-infrared-card">
         <div class="extension-infrared-card-title">🔴 Record / Learn IR Signal</div>
-        <p style="color:var(--text-dim); font-size:13px; margin-bottom:20px;">
+        <p style="color:var(--extension-infrared-text-dim); font-size:13px; margin-bottom:20px;">
           Point your existing remote at the USB IR blaster's receiver and press a button.
         </p>
         <div class="extension-infrared-record-section">
@@ -392,7 +392,7 @@
           <div class="extension-infrared-record-label" id="extension-infrared-recordLabel">Press to start recording</div>
         </div>
         <div id="extension-infrared-capturedSignal" style="display:none; margin-top:16px;">
-          <div class="extension-infrared-card-title" style="color:var(--success);">✓ Signal Captured</div>
+          <div class="extension-infrared-card-title" style="color:var(--extension-infrared-success);">✓ Signal Captured</div>
           <div class="extension-infrared-log-box" id="extension-infrared-capturedData" style="max-height:100px;"></div>
           <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
             <input class="extension-infrared-db-search" id="extension-infrared-capturedName" placeholder="Button name (e.g., Power, Vol Up)" style="flex:1; margin-bottom:0; min-width:150px;">
@@ -403,7 +403,7 @@
       </div>
       <div class="extension-infrared-card" style="display:none">
         <div class="extension-infrared-card-title">⚡ Batch Learn Mode</div>
-        <p style="color:var(--text-dim); font-size:13px; margin-bottom:12px;">
+        <p style="color:var(--extension-infrared-text-dim); font-size:13px; margin-bottom:12px;">
           Pre-define button names, then learn them one by one. Much faster for capturing a full remote.
         </p>
         <div style="margin-bottom:12px;">
@@ -425,23 +425,23 @@
         </div>
         <div id="extension-infrared-batchProgress" style="display:none; margin-top:12px;">
           <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
-            <div style="flex:1; height:4px; background:var(--border); border-radius:2px; overflow:hidden;">
-              <div id="extension-infrared-batchProgressBar" style="height:100%; background:var(--success); transition:width 0.3s; width:0%;"></div>
+            <div style="flex:1; height:4px; background:var(--extension-infrared-border); border-radius:2px; overflow:hidden;">
+              <div id="extension-infrared-batchProgressBar" style="height:100%; background:var(--extension-infrared-success); transition:width 0.3s; width:0%;"></div>
             </div>
-            <span id="extension-infrared-batchProgressText" style="font-size:12px; color:var(--text-dim);"></span>
+            <span id="extension-infrared-batchProgressText" style="font-size:12px; color:var(--extension-infrared-text-dim);"></span>
           </div>
-          <div id="extension-infrared-batchCurrentLabel" style="font-size:14px; font-weight:600; color:var(--success);"></div>
-          <p style="font-size:12px; color:var(--text-dim); margin-top:4px;">Point your remote and press the button now...</p>
+          <div id="extension-infrared-batchCurrentLabel" style="font-size:14px; font-weight:600; color:var(--extension-infrared-success);"></div>
+          <p style="font-size:12px; color:var(--extension-infrared-text-dim); margin-top:4px;">Point your remote and press the button now...</p>
         </div>
       </div>
 
       <div class="extension-infrared-card">
         <div class="extension-infrared-card-title">ℹ️ Recording Tips</div>
-        <div style="color:var(--text-dim); font-size:13px; line-height:1.8;">
+        <div style="color:var(--extension-infrared-text-dim); font-size:13px; line-height:1.8;">
           <p>• Hold your remote <strong>2-5 cm</strong> from the IR blaster</p>
           <p>• Press the remote button <strong>once, briefly</strong></p>
           <p>• Avoid fluorescent lighting (can interfere)</p>
-          <!--<p>• Both <span style="color:var(--tiqiaa)">Tiqiaa</span> and <span style="color:var(--ocrustar)">Ocrustar</span> support learn mode</p>-->
+          <!--<p>• Both <span style="color:var(--extension-infrared-tiqiaa)">Tiqiaa</span> and <span style="color:var(--extension-infrared-ocrustar)">Ocrustar</span> support learn mode</p>-->
         </div>
       </div>
 
@@ -450,7 +450,7 @@
 
     <div class="extension-infrared-card" style="margin-top:16px;">
       <div class="extension-infrared-card-title">Previously recorded signals</div>
-      <div id="extension-infrared-previously-recorded-signals" style="color:var(--text-dim); font-size:13px; line-height:1.8;">
+      <div id="extension-infrared-previously-recorded-signals" style="color:var(--extension-infrared-text-dim); font-size:13px; line-height:1.8;">
       </div>
     </div>
   </div>
