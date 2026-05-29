@@ -10,7 +10,7 @@
       ]
     }
   ],
-  "description": "A universal emote control that can copy and send infrared signals",
+  "description": "A universal remote control that can copy and send infrared signals",
   "gateway_specific_settings": {
     "webthings": {
       "exec": "python3 {path}/main.py",
